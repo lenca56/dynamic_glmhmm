@@ -6,7 +6,7 @@ import scipy.stats as stats
 from scipy.optimize import minimize
 from utils import *
 from plotting_utils import *
-import dglm_hmm1, dglm_hmm
+import dynamic_glmhmm
 from scipy.stats import multivariate_normal, norm
 import seaborn as sns
 from sklearn.model_selection import KFold
@@ -218,7 +218,7 @@ def fit_eval_CV_multiple_alphas(K, x, y, sessInd, presentTrain, presentTest, alp
     allpi = np.zeros((len(alphaList)+1, K))
     allW = np.zeros((len(alphaList)+1, N,K,D,C)) 
 
-    dGLM_HMM2 = dglm_hmm.dGLM_HMM2(N,K,D,C)
+    dGLM_HMM2 = dynamic_glmhmm.dGLM_HMM2(N,K,D,C)
 
     if (dglmhmmW is None or globalP is None): # fitting dGLM-HMM1 where only weights are varying
         raise Exception("dglmhmmW AND  globalP need to be given from dGLM-HMM1 parameter fitting of best sigma")

@@ -9,7 +9,7 @@ import seaborn as sns
 from scipy.optimize import minimize
 from utils import *
 from scipy.stats import multivariate_normal
-import dglm_hmm1
+import dynamic_glmhmm
 
 
 colormap = sns.color_palette("viridis")
