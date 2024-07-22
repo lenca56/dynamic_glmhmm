@@ -1,0 +1,16 @@
+figures/**
+*.csv
+*.npy
+*.npz
+data/**
+data_simulated/**
+data_IBL/**
+logs/**
+*.pkl
+*.pickle
+**/__pycache__
+__pycache__/**
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+*.pyc
+.DS_Store
