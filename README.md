@@ -1,2 +1,2 @@
 # dynamic_glmhmm
-code to fit dynamic GLM-HMM (time-varying parameters)
+This package provides flexible and easy-to-use code for fitting Generalized Linear Models (GLMs), standard GLM-HMMs (also known as Input-Output HMMs or IO-HMMs), and dynamic GLM-HMMs (in which parameters are varying across sessions). The code currently allows fitting observational data of Bernoulli distributions, but can easily be adapted to fit observational data with more than two classes. Inference is done using a variation of the Expectation Maximization (EM) algorithm.
