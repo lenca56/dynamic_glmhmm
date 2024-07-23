@@ -634,7 +634,7 @@ class dynamic_GLMHMM():
                         raise Exception(f'Global P row {i} does not sum up to 1')
 
         if (fit_init_states==True and len(sessInd)-1<50):
-            raise Exception("Should not fit init states when less than 50 sessions due to high uncertainty")
+            raise Exception("Should not fit init states when less than 20 sessions due to high uncertainty")
 
         sess = len(sessInd)-1 # total number of sessions
         startSessInd = sessInd[:-1] # only the first trial of each session
@@ -712,7 +712,6 @@ class dynamic_GLMHMM():
         '''
 
         N = x.shape[0]
-        
 
         present = np.ones((N))
         phi = self.observation_probability(x=x, w=w)
