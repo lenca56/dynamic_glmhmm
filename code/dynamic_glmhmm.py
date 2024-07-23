@@ -412,7 +412,7 @@ class dynamic_GLMHMM():
 
         return p, pi, w 
     
-    def value_weight_loss_function(self, currentW, x, y, present, gamma, prevW, nextW, sigma, model_type = 'standard', L2penaltyW=1):
+    def value_weight_loss_function(self, currentW, x, y, present, gamma, prevW, nextW, sigma, model_type = 'standard', L2penaltyW=0):
         ''' 
         weight loss function to optimize the weights in M-step of fitting function is calculated as negative of weighted log likelihood + prior terms 
         coming from drifting wrt neighboring sessions
@@ -495,7 +495,7 @@ class dynamic_GLMHMM():
 
         return -lf 
 
-    def grad_weight_loss_function(self, currentW, x, y, present, gamma, prevW, nextW, sigma, model_type='standard', L2penaltyW=1):
+    def grad_weight_loss_function(self, currentW, x, y, present, gamma, prevW, nextW, sigma, model_type='standard', L2penaltyW=0):
         ''' 
         weight loss function to optimize the weights in M-step of fitting function is calculated as negative of weighted log likelihood + prior terms 
         coming from drifting wrt neighboring sessions
@@ -569,7 +569,7 @@ class dynamic_GLMHMM():
 
         return -grad
     
-    def fit(self, x, y, present, initP, initpi, initW, sigma=0, alpha=0, A=None, sessInd=None, maxIter=250, tol=1e-3, model_type='standard',  L2penaltyW=1, priorDirP = [10,1], fit_init_states=False):
+    def fit(self, x, y, present, initP, initpi, initW, sigma=0, alpha=0, A=None, sessInd=None, maxIter=250, tol=1e-3, model_type='standard',  L2penaltyW=0, priorDirP = [10,1], fit_init_states=False):
         '''
         Fitting function based on EM algorithm. Algorithm: observation probabilities are calculated with old weights for all sessions, then 
         forward and backward passes are done for each session, weights are optimized for one particular session (phi stays the same),
@@ -691,7 +691,7 @@ class dynamic_GLMHMM():
                 for i in range(0, self.K):
                     for j in range(0, self.K):
                         if priorDirP is not None:
-                            p[:,i,j] = (zeta[:,i,j].sum() + priorDirP[i,j]) / (zeta[:,i,:].sum() + priorDirP[i,:].sum()) # added prior of Dirichlet(10,1)
+                            p[:,i,j] = (zeta[:,i,j].sum() + priorDirP[i!=j]) / (zeta[:,i,:].sum() + priorDirP[i!=j] + priorDirP[i==j] * (self.K-1) ) # added prior of Dirichlet(11,2,2..,2)
                         else:
                             p[:,i,j] = zeta[:,i,j].sum() / zeta[:,i,:].sum()
                 
