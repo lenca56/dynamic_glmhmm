@@ -121,37 +121,37 @@ def plot_testLl_CV_alpha(testLl, alphaList, label, color, axes, linestyle='-o', 
     if (label is not None):
         axes.legend(loc='upper right')
 
-def plotting_weights_IBL(w, sessInd, axes, yLim, colors=None, labels=None, linewidth=5, linestyle='-', legend=True, sortedStateInd=None, size=24):
+# def plotting_weights_IBL(w, sessInd, axes, yLim, colors=None, labels=None, linewidth=5, linestyle='-', legend=True, sortedStateInd=None, size=24):
 
-    # permute weights 
-    if (sortedStateInd is not None):
-        w = w[:,sortedStateInd,:,:]
+#     # permute weights 
+#     if (sortedStateInd is not None):
+#         w = w[:,sortedStateInd,:,:]
 
-    D = w.shape[2]
+#     D = w.shape[2]
 
-    K = w.shape[1]
-    sess = len(sessInd)-1
+#     K = w.shape[1]
+#     sess = len(sessInd)-1
 
-    if (K==1):
-        axes.axhline(0, alpha=0.3, color='black',linestyle='-')
-        for d in range(0, D):
-            axes.plot(range(1,sess+1),w[sessInd[:-1],0,d,1],color=colors[d],linewidth=linewidth,label=labels[d], alpha=0.8, linestyle=linestyle)
-        axes.set_ylabel("weights", size=size-2)
-        axes.set_xlabel('session', size=size-2)
-        axes.set_ylim(yLim)
-        axes.set_title(f'State 1', size=size)
-        axes.legend()
-    else:
-        for k in range(0,K):
-            axes[k].axhline(0, alpha=0.2, color='black',linestyle='-')
-            for d in range(0, D):
-                axes[k].plot(range(1,sess+1),w[sessInd[:-1],k,d,1],color=colors[d],linewidth=linewidth,label=labels[d], alpha=0.8, linestyle=linestyle)
-            axes[k].set_ylim(yLim)
-            axes[k].set_ylabel("weights", size=size-2)
-            axes[k].set_title(f'State {k+1}', size=size)
-            if (legend==True):
-                axes[k].legend()
-        axes[K-1].set_xlabel('session')
+#     if (K==1):
+#         axes.axhline(0, alpha=0.3, color='black',linestyle='-')
+#         for d in range(0, D):
+#             axes.plot(range(1,sess+1),w[sessInd[:-1],0,d,1],color=colors[d],linewidth=linewidth,label=labels[d], alpha=0.8, linestyle=linestyle)
+#         axes.set_ylabel("weights", size=size-2)
+#         axes.set_xlabel('session', size=size-2)
+#         axes.set_ylim(yLim)
+#         axes.set_title(f'State 1', size=size)
+#         axes.legend()
+#     else:
+#         for k in range(0,K):
+#             axes[k].axhline(0, alpha=0.2, color='black',linestyle='-')
+#             for d in range(0, D):
+#                 axes[k].plot(range(1,sess+1),w[sessInd[:-1],k,d,1],color=colors[d],linewidth=linewidth,label=labels[d], alpha=0.8, linestyle=linestyle)
+#             axes[k].set_ylim(yLim)
+#             axes[k].set_ylabel("weights", size=size-2)
+#             axes[k].set_title(f'State {k+1}', size=size)
+#             if (legend==True):
+#                 axes[k].legend()
+#         axes[K-1].set_xlabel('session')
 
 def plotting_weights_per_feature(w, sessInd, axes, trueW=None, yLim=[[-2.2,2.2],[-6.2,6.2]], colors=colorsStates, labels=myFeatures, linewidth=5, linestyle='-', alpha=0.9, legend=True, sortedStateInd=None, size=24):
     
@@ -180,23 +180,22 @@ def plotting_weights_per_feature(w, sessInd, axes, trueW=None, yLim=[[-2.2,2.2],
             axes[d].legend(loc = 'center left', bbox_to_anchor=(0.99, 0.4))
     axes[D-1].set_xlabel('session', size=size-2)
 
-def plot_constant_weights(w, axes, xlabels, colors, sign=1, sortedStateInd=None):
+def plot_constant_weights(w, axes, labels, colors):
     C = 2
-    if (w.ndim == 3): # it means N=1
+    if (w.ndim == 3): # it means N=1 
         w = w.reshape((1,w.shape[0],w.shape[1],w.shape[2]))
+        K = w.shape[1]
     elif (w.ndim == 4): # 
         K = w.shape[1]
-        D = w.shape[2]
-        if (sortedStateInd!=None):
-            w = w[:,sortedStateInd,:,:]
-        for k in range(K):
-            axes.plot(sign * w[0,k,:,1], marker='o', color=colors[k],label=xlabels, linewidth=2)
     else:
         raise Exception("Weight matrix should have 3 or 4 dimensions (N X D x C or N x K x D x C)")
     
-    axes.plot(xlabels,np.zeros((len(xlabels),1)),'k--')
-    axes.set_xticks(np.arange(0,len(xlabels)))
-    axes.set_xticklabels(xlabels,rotation=90)
+    for k in range(K):
+        axes.plot(w[0,k,:,1], marker='o', color=colors[k],label=labels, linewidth=2)
+    
+    axes.plot(labels,np.zeros((len(labels),1)),'k--')
+    axes.set_xticks(np.arange(0,len(labels)))
+    axes.set_xticklabels(labels,rotation=90)
 
 def plot_transition_matrix(P, title='Recovered transition matrix', sortedStateInd=None):
     ''' 

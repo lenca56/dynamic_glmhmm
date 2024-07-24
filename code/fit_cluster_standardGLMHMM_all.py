@@ -33,9 +33,10 @@ init = df.loc[idx,'init']
 K = df.loc[idx,'K']
 signedStimulus = df.loc[idx,'signedStimulus']
 
-x = np.load(f'../data_IBL/X_allAnimals_signedStimulus={signedStimulus}.npy')
-y = np.load(f'../data_IBL/Y_allAnimals_signedStimulus={signedStimulus}.npy')
-sessInd = np.load(f'../data_IBL/sessInd_allAnimals_signedStimulus={signedStimulus}.npy')
+pTanh = None
+x = np.load(f'../data_IBL/X_wittenAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}.npy')
+y = np.load(f'../data_IBL/Y_wittenAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}.npy')
+sessInd = np.load(f'../data_IBL/sessInd_wittenAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}.npy')
 
 N = x.shape[0]
 D = x.shape[1]
@@ -51,5 +52,5 @@ initP, initpi, initW = dGLMHMM.generate_param(sessInd=sessInd, transitionDistrib
 standardP, standardpi, standardW, _ = dGLMHMM.fit(x, y,  present, initP=initP, initpi=initpi, initW=initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-4, L2penaltyW=1, priorDirP=[10,1], model_type=model_type, fit_init_states=True) # fit the model
 _, trainLl, trainAccuracy  = dGLMHMM.evaluate(x, y, sessInd, present, standardP, standardpi, standardW)
 
-np.savez(f'../data_IBL/allAnimals_standardGLMHMM_{K}-state_init={init}_signedStimulus={signedStimulus}', P=standardP, pi=standardpi, W=standardW, trainLl=trainLl, trainAccuracy=trainAccuracy)
+np.savez(f'../data_IBL/wittenAnimals_pTanh={pTanh}_standardGLMHMM_{K}-state_init={init}_signedStimulus={signedStimulus}', P=standardP, pi=standardpi, W=standardW, trainLl=trainLl, trainAccuracy=trainAccuracy)
 
