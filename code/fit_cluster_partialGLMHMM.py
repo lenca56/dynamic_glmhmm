@@ -81,21 +81,9 @@ initP = dataInit['P']
 initpi = dataInit['pi']
 initW = dataInit['W']
 
-
-
 # fitting
 for fold in range(0,splitFolds):    
-    allP[fold], _, allW[fold], trainLl[fold], testLl[fold], testAccuracy[fold] = fit_eval_CV_multiple_sigmas(K, x, y, sessInd, presentTrain[fold], presentTest[fold], sigmaList=sigmaList, maxiter=maxiter, glmhmmW=glmhmmW, glmhmmP=glmhmmP, L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states)
-    
-
-dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
-present = np.ones((N)).astype(int) # using all data
-
-# fit with cross-validation across multiple sigmas 
-
-
-standardP, standardpi, standardW, _ = dGLMHMM.fit(x, y,  present, initP=initP, initpi=initpi, initW=initW, sigma=sigma, sessInd=sessInd, maxIter=maxiter, tol=1e-4, L2penaltyW=1, priorDirP=[10,1], model_type=model_type, fit_init_states=True) # fit the model
-_, trainLl, trainAccuracy  = dGLMHMM.evaluate(x, y, sessInd, present, standardP, standardpi, standardW)
+    allP[fold], _, allW[fold], trainLl[fold], testLl[fold], testAccuracy[fold] = fit_eval_CV_multiple_sigmas(K, x, y, sessInd, presentTrain[fold], presentTest[fold], sigmaList=sigmaList, maxiter=maxiter, globalW=glmhmmW, globalP=glmhmmP, L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states)
 
 np.savez(f'../data_IBL/allAnimals_standardGLMHMM_{K}-state_init={init}_signedStimulus={signedStimulus}', P=standardP, pi=standardpi, W=standardW, trainLl=trainLl, trainAccuracy=trainAccuracy)
 

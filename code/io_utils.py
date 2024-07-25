@@ -32,7 +32,8 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
 
     # getting correct answer for each trial
     correctSide = np.array(dataTemp['correctSide'])
-
+    
+    # tanh transformation
     if pTanh is not None:
         cL = np.tanh(pTanh * data['contrastLeft']) / np.tanh(pTanh) # tanh transformation of left contrasts
         cR = np.tanh(pTanh * data['contrastRight']) / np.tanh(pTanh) # tanh transformation of right contrasts
@@ -40,6 +41,7 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
         cL = data['contrastLeft']
         cR = data['contrastRight']
 
+    # creating inputs and ouput arrays
     if signedStimulus == True:
         D = 4
         x = np.zeros((dataTemp.shape[0], D)) 
@@ -47,7 +49,7 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
 
         x[:,0] = 1 # bias or offset is first column
         x[:,1] = cR - cL # 'stimulus contrast'
-        x[:,1] = (x[:,1] - np.mean(x[:,1])) / np.std(x[:,1]) # z-scored
+        x[:,1] = x[:,1] / np.std(x[:,1]) # z-scored   # note that mean should be around 0
         x[1:,2] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's
         x[1:,3] = 2 * np.array(dataTemp['correctSide'])[0:-1] - 1 # previous reward as in Zoe's
     else:
@@ -55,11 +57,12 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
         x = np.zeros((dataTemp.shape[0], D)) 
         y = np.array(dataTemp['choice'])
 
+        x[:,0] = 1 # bias or offset is first column
         x[:,1] = cR # contrast left transformed 
         x[:,2] = cL # contrast right transformed
         # not taking into account first and last of each session 
-        x[1:,3] = y[0:-1] # previous choice
-        x[1:,4] = np.array(dataTemp['correctSide'])[0:-1] # previous rewarded
+        x[1:,3] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's {-1,1}
+        x[1:,4] = 2 * np.array(dataTemp['correctSide'])[0:-1] - 1 # previous reward as in Zoe's {-1,1}
         
     # session start indices
     sessInd = [0]

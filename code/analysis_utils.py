@@ -77,7 +77,7 @@ def split_data(N, sessInd, folds=5, blocks=10, random_state=1):
 
     return presentTrain, presentTest
 
-def fit_eval_CV_multiple_sigmas(K, x, y, sessInd, presentTrain, presentTest, sigmaList=[0, 0.01, 0.1, 1, 10, 100], maxiter=300, glmhmmW=None, glmhmmP=None, L2penaltyW=1, priorDirP = None, fit_init_states=False):
+def fit_eval_CV_multiple_sigmas(K, x, y, sessInd, presentTrain, presentTest, sigmaList=[0.01, 0.1, 1, 10, 100], maxiter=300, glmhmmW=None, glmhmmP=None, L2penaltyW=1, priorDirP = None, fit_init_states=False):
     ''' 
     fitting function for multiple values of sigma with initializing from the previously found parameters with increasing order of fitting sigma
     first sigma is 0 and is the GLM-HMM fit
@@ -125,39 +125,37 @@ def fit_eval_CV_multiple_sigmas(K, x, y, sessInd, presentTrain, presentTest, sig
     C = 2 # only looking at binomial classes
     sess = len(sessInd) - 1
 
-    trainLl = np.zeros((len(sigmaList), maxiter))
-    testLlSessions = np.zeros((len(sigmaList), sess))
-    testLl = np.zeros((len(sigmaList)))
-    testAccuracy = np.zeros((len(sigmaList)))
-    allP = np.zeros((len(sigmaList), K, K))
-    allpi = np.zeros((len(sigmaList), K))
-    allW = np.zeros((len(sigmaList), N,K,D,C)) 
+    trainLl = np.zeros((len(sigmaList)+1, maxiter))
+    testLlSessions = np.zeros((len(sigmaList)+1, sess))
+    testLl = np.zeros((len(sigmaList)+1))
+    testAccuracy = np.zeros((len(sigmaList)+1))
+    allP = np.zeros((len(sigmaList)+1, K, K))
+    allpi = np.zeros((len(sigmaList)+1, K))
+    allW = np.zeros((len(sigmaList)+1, N,K,D,C)) 
 
     oneSessInd = [0,N] # treating whole dataset as one session for normal GLM-HMM fitting
-    dGLM_HMM = dglm_hmm1.dGLM_HMM1(N,K,D,C)
+    dGLM_HMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
+    
+    # first one is standard GLM-HMM (sigma=0)
+    if (glmhmmW is not None and glmhmmP is not None): # if parameters are given from standard GLM-HMM 
+        oldSessInd = [0, glmhmmW.shape[0]] # assuming glmhmmW has constant weights
+        allP[0] = np.copy(glmhmmP) # K x K transition matrix
+        allW[0] = reshapeWeights(glmhmmW, oldSessInd, oneSessInd, standardGLMHMM=True)
+        allpi[0] = np.ones((K))/K
+    else:
+        initP, initpi, initW = dGLMHMM.generate_param(sessInd=sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)], model_type='standard') 
+  
+    # fit standard GLM-HMM for this particular dataset initialized with global ones or randomly (as above)
 
     for indSigma in range(0,len(sigmaList)): 
-        if (indSigma == 0): 
-            if(sigmaList[0] == 0): 
-                if (glmhmmW is not None and glmhmmP is not None): # if parameters are given from standard GLM-HMM 
-                    oldSessInd = [0, glmhmmW.shape[0]] # assuming glmhmmW has constant weights
-                    allP[indSigma] = np.copy(glmhmmP) # K x K transition matrix
-                    allW[indSigma] = reshapeWeights(glmhmmW, oldSessInd, oneSessInd, standardGLMHMM=True)
-                    allpi[indSigma] = np.ones((K))/K
-                else:
-                    presentAll = np.ones((N)).astype(int) # using all data for sigma=0 fit
-                    initP0, initpi0, initW0 = dGLM_HMM.generate_param(sessInd=oneSessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)]) 
-                    allP[indSigma], allpi[indSigma], allW[indSigma], trainLl[indSigma] = dGLM_HMM.fit(x, y, presentAll, initP0, initpi0, initW0, sigma=reshapeSigma(0, K, D), sessInd=sessInd, maxIter=maxiter, tol=1e-4, L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states)
-            else:  
-                raise Exception("First sigma of sigmaList should be 0, meaning standard GLM-HMM")
-        else:
-            # initializing from previous fit
-            initP = allP[indSigma-1] 
-            initpi = allpi[indSigma-1] 
-            initW = allW[indSigma-1] 
-            
-            # fitting dGLM-HMM
-            allP[indSigma], allpi[indSigma], allW[indSigma], trainLl[indSigma] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(sigmaList[indSigma], K, D), sessInd=sessInd, maxIter=maxiter, tol=1e-3, L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states) 
+
+        # initializing from previous fit
+        initP = allP[indSigma-1] 
+        initpi = allpi[indSigma-1] 
+        initW = allW[indSigma-1] 
+
+        # fitting dGLM-HMM
+        allP[indSigma], allpi[indSigma], allW[indSigma], trainLl[indSigma] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(sigmaList[indSigma], K, D), sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='partial', L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states) 
         
         # evaluate 
         testLlSessions[indSigma], testLl[indSigma], testAccuracy[indSigma] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[indSigma], allpi[indSigma], allW[indSigma])
