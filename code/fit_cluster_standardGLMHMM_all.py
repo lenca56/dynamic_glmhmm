@@ -18,25 +18,28 @@ dfAll = pd.read_csv(ibl_data_path + '/Ibl_processed.csv')
 
 inits = 20
 
-df = pd.DataFrame(columns=['init','K','signedStimulus']) # in total z=0,199 inclusively
+df = pd.DataFrame(columns=['init','K','signedStimulus', 'pTanh']) # in total z=0,199 inclusively
 z = 0
 for init in range(0,inits):
     for K in [1,2,3,4,5]:
-        for signedStimulus in [False, True]:
-            df.loc[z, 'init'] = init
-            df.loc[z, 'K'] = K
-            df.loc[z,'signedStimulus'] = signedStimulus
-            z += 1
+        for pTanh in [0.01, 1, 5]:
+            for signedStimulus in [False, True]:
+                df.loc[z, 'init'] = init
+                df.loc[z, 'K'] = K
+                df.loc[z, 'pTanh'] 
+                df.loc[z,'signedStimulus'] = signedStimulus
+                z += 1
+
 # read from cluster array in order to get parallelizations
 idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
 init = df.loc[idx,'init']
 K = df.loc[idx,'K']
 signedStimulus = df.loc[idx,'signedStimulus']
 
-pTanh = None
-x = np.load(f'../data_IBL/X_wittenAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}.npy')
-y = np.load(f'../data_IBL/Y_wittenAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}.npy')
-sessInd = np.load(f'../data_IBL/sessInd_wittenAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}.npy')
+data = np.load(f'../data_IBL/Data_allAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}.npy')
+x = data['x']
+y = data['y']
+sessInd = data['sessInd']
 
 N = x.shape[0]
 D = x.shape[1]

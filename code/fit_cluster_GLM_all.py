@@ -28,57 +28,44 @@ if ('CSHL_007' in subjectsAll):
 if ('CSHL049' in subjectsAll):
     subjectsAll.remove('CSHL049')
 
-inits = 5
-df = pd.DataFrame(columns=['init','p','signedStimulus']) # in total z=0,199 inclusively
+df = pd.DataFrame(columns=['pTanh','signedStimulus']) # in total z=0,29 inclusively
 z = 0
-for init in range(0,inits):
+for pTanh in [0.01, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7]:
     for signedStimulus in [False, True]:
-        df.loc[z, 'init'] = init
+        df.loc[z, 'pTanh'] = pTanh
         df.loc[z,'signedStimulus'] = signedStimulus
         z += 1
+
 # read from cluster array in order to get parallelizations
-idx = 0 # int(os.environ["SLURM_ARRAY_TASK_ID"])
-init = df.loc[idx,'init']
+idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
+pTanh = df.loc[idx,'pTanh']
 signedStimulus = df.loc[idx,'signedStimulus']
 
-pTanhList = [0.01, 5] #[0.01, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7] # 0.1 is basically no transformation on those value
- 
-standardP = np.empty((len(pTanhList)), dtype=object)
-standardpi = np.empty((len(pTanhList)), dtype=object)
-standardW = np.empty((len(pTanhList)), dtype=object)
-trainLl = np.empty((len(pTanhList)), dtype=object)
-trainAccuracy = np.empty((len(pTanhList)), dtype=object)
 
-c = 0
-for pTanh in pTanhList:
+# create dataset with current pTanh transformation
+firstSubject = 'ibl_witten_02'
+x, y, sessInd, correctSide = get_mouse_design(dfAll, subject=firstSubject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) 
+for subject in subjectsAll:
+    if (subject != firstSubject):
+        xTemp, yTemp, sessIndTemp, correctSideTemp = get_mouse_design(dfAll, subject=subject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) 
+        # using all data
+        x = np.concatenate((x,xTemp))
+        y = np.concatenate((y,yTemp))
+        sessInd = sessInd + [i + sessInd[-1] for i in sessIndTemp[1:]]
 
-    # create dataset with current pTanh transformation
-    firstSubject = 'ibl_witten_02'
-    x, y, sessInd, correctSide = get_mouse_design(dfAll, subject=firstSubject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) 
-    for subject in subjectsAll:
-        if (subject != firstSubject):
-            xTemp, yTemp, sessIndTemp, correctSideTemp = get_mouse_design(dfAll, subject=subject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) 
-            # using all data
-            x = np.concatenate((x,xTemp))
-            y = np.concatenate((y,yTemp))
-            sessInd = sessInd + [i + sessInd[-1] for i in sessIndTemp[1:]]
+N = x.shape[0]
+K = 1 # classic GLM
+D = x.shape[1]
+C = 2
+maxiter = 250
 
-    N = x.shape[0]
-    K = 1 # classic GLM
-    D = x.shape[1]
-    C = 2
-    maxiter = 1 #250
+model_type = 'standard' # fitting standard GLM-HMM
 
-    model_type = 'standard' # fitting standard GLM-HMM
+dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
+present = np.ones((N)).astype(int) # using all data
+irrelevantSigma = np.ones((K,D))
+initP, initpi, initW = dGLMHMM.generate_param(sessInd=sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)], model_type=model_type) 
+standardP, standardpi, standardW, _ = dGLMHMM.fit(x, y,  present, initP=initP, initpi=initpi, initW=initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-4, L2penaltyW=0.5, priorDirP=[10,1], model_type=model_type, fit_init_states=False) # fit the model
+_, trainLl, trainAccuracy  = dGLMHMM.evaluate(x, y, sessInd, present, standardP, standardpi, standardW)
 
-    dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
-    present = np.ones((N)).astype(int) # using all data
-    irrelevantSigma = np.ones((K,D))
-    initP, initpi, initW = dGLMHMM.generate_param(sessInd=sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)], model_type=model_type) 
-    standardP[c], standardpi[c], standardW[c], _ = dGLMHMM.fit(x, y,  present, initP=initP, initpi=initpi, initW=initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-4, L2penaltyW=1, priorDirP=[10,1], model_type=model_type, fit_init_states=True) # fit the model
-    _, trainLl[c], trainAccuracy[c]  = dGLMHMM.evaluate(x, y, sessInd, present, standardP, standardpi, standardW)
-
-    c += 1
-
-np.savez(f'../data_IBL/allAnimals_pTanh-search_GLM_init={init}_signedStimulus={signedStimulus}', P=standardP, pi=standardpi, W=standardW, trainLl=trainLl, trainAccuracy=trainAccuracy)
-
+np.savez(f'../data_IBL/allAnimals_pTanh={pTanh}_GLM_signedStimulus={signedStimulus}', P=standardP, pi=standardpi, W=standardW, trainLl=trainLl, trainAccuracy=trainAccuracy)
