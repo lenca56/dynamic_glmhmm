@@ -33,10 +33,10 @@ if ('CSHL049' in subjectsAll):
 inits = 25
 df = pd.DataFrame(columns=['init','K','signedStimulus', 'pTanh']) # in total z=0,399 inclusively
 z = 0
-for K in [2,3,4,5]:
+for K in [3,4,2,5]:
     for signedStimulus in [False, True]:
-        for init in range(0,inits):
-            for pTanh in [0.01, 5]:
+        for pTanh in [0.01, 5]:
+            for init in range(0,inits):
                 df.loc[z, 'init'] = init
                 df.loc[z, 'K'] = K
                 df.loc[z, 'pTanh'] = pTanh
