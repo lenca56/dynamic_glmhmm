@@ -191,7 +191,7 @@ def plot_constant_weights(w, axes, labels, colors):
         raise Exception("Weight matrix should have 3 or 4 dimensions (N X D x C or N x K x D x C)")
     
     for k in range(K):
-        axes.plot(w[0,k,:,1], marker='o', color=colors[k],label=labels, linewidth=2)
+        axes.plot(w[0, k, :, 1], marker='o', color=colors[k],label=labels, linewidth=2)
     
     axes.plot(labels,np.zeros((len(labels),1)),'k--')
     axes.set_xticks(np.arange(0,len(labels)))

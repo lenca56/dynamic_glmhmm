@@ -63,19 +63,27 @@ for subject in subjectsAll:
 
 np.savez(f'../data_IBL/Data_allAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}', x=x, y=y, sessInd=sessInd)
 
-N = x.shape[0]
-D = x.shape[1]
-C = 2
-maxiter = 250
+# N = x.shape[0]
+# D = x.shape[1]
+# C = 2
+# maxiter = 250
 
-model_type = 'standard' # fitting standard GLM-HMM
+# model_type = 'standard' # fitting standard GLM-HMM
 
-dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
-present = np.ones((N)).astype(int) # using all data
-irrelevantSigma = np.ones((K,D))
-initP, initpi, initW = dGLMHMM.generate_param(sessInd=sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-4,4)], model_type=model_type) 
-standardP, standardpi, standardW, _ = dGLMHMM.fit(x, y,  present, initP=initP, initpi=initpi, initW=initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-4, L2penaltyW=1, priorDirP=[10,1], model_type=model_type, fit_init_states=False) # fit the model
-_, trainLl, trainAccuracy  = dGLMHMM.evaluate(x, y, sessInd, present, standardP, standardpi, standardW)
+# dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
+# present = np.ones((N)).astype(int) # using all data
+# irrelevantSigma = np.ones((K,D))
+# initP, initpi, initW = dGLMHMM.generate_param(sessInd=sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-4,4)], model_type=model_type) 
+# standardP, standardpi, standardW, _ = dGLMHMM.fit(x, y,  present, initP=initP, initpi=initpi, initW=initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-4, L2penaltyW=1, priorDirP=[10,1], model_type=model_type, fit_init_states=False) # fit the model
+# _, trainLl, trainAccuracy  = dGLMHMM.evaluate(x, y, sessInd, present, standardP, standardpi, standardW)
 
-np.savez(f'../data_IBL/allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_init={init}_signedStimulus={signedStimulus}', P=standardP, pi=standardpi, W=standardW, trainLl=trainLl, trainAccuracy=trainAccuracy)
+data = np.load(f'../data_IBL/allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_init={init}_signedStimulus={signedStimulus}.npz')
+standardP = data['P']
+standardpi = data['pi']
+standardW = data['W']
+trainLl = data['trainLl'] 
+trainAccuracy= data['trainAccuracy']
+
+# saving parameters for each session to optimize memory
+np.savez(f'../data_IBL/allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_init={init}_signedStimulus={signedStimulus}', P=standardP[sessInd[:-1]], pi=standardpi, W=standardW[sessInd[:-1]], trainLl=trainLl, trainAccuracy=trainAccuracy)
 

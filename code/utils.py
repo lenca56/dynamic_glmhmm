@@ -72,6 +72,7 @@ def reshapeWeights(w, oldSessInd, newSessInd, standardGLMHMM=False):
     k = w.shape[1]
     d = w.shape[2]
     c = w.shape[3]
+    
     if (T != oldSessInd[-1]):
         raise Exception ("Indices and weights do not match in size")
     if (standardGLMHMM == True):
