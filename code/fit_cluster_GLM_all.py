@@ -68,4 +68,5 @@ initP, initpi, initW = dGLMHMM.generate_param(sessInd=sessInd, transitionDistrib
 standardP, standardpi, standardW, _ = dGLMHMM.fit(x, y,  present, initP=initP, initpi=initpi, initW=initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-4, L2penaltyW=0.5, priorDirP=[10,1], model_type=model_type, fit_init_states=False) # fit the model
 _, trainLl, trainAccuracy  = dGLMHMM.evaluate(x, y, sessInd, present, standardP, standardpi, standardW)
 
-np.savez(f'../data_IBL/allAnimals_pTanh={pTanh}_GLM_signedStimulus={signedStimulus}', P=standardP, pi=standardpi, W=standardW, trainLl=trainLl, trainAccuracy=trainAccuracy)
+np.savez(f'../data_IBL/allAnimals_pTanh={pTanh}_GLM_signedStimulus={signedStimulus}', P=standardP[sessInd[:-1]], pi=standardpi, W=standardW[sessInd[:-1]], trainLl=trainLl, trainAccuracy=trainAccuracy)
+

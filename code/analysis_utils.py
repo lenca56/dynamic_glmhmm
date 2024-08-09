@@ -77,7 +77,7 @@ def split_data(N, sessInd, folds=5, blocks=10, random_state=1):
 
     return presentTrain, presentTest
 
-def fit_eval_CV_multiple_sigmas(K, x, y, sessInd, presentTrain, presentTest, sigmaList=[0.01, 0.1, 1, 10, 100], maxiter=300, glmhmmW=None, glmhmmP=None, L2penaltyW=1, priorDirP = None, fit_init_states=False):
+def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigmaList=[0.01, 0.1, 1, 10, 100], maxiter=300, glmhmmW=None, glmhmmP=None, glmhmmpi=None, L2penaltyW=1, priorDirP = None, fit_init_states=False):
     ''' 
     fitting function for multiple values of sigma with initializing from the previously found parameters with increasing order of fitting sigma
     first sigma is 0 and is the GLM-HMM fit
@@ -129,25 +129,29 @@ def fit_eval_CV_multiple_sigmas(K, x, y, sessInd, presentTrain, presentTest, sig
     testLlSessions = np.zeros((len(sigmaList)+1, sess))
     testLl = np.zeros((len(sigmaList)+1))
     testAccuracy = np.zeros((len(sigmaList)+1))
-    allP = np.zeros((len(sigmaList)+1, K, K))
+    allP = np.zeros((len(sigmaList)+1, N, K, K))
     allpi = np.zeros((len(sigmaList)+1, K))
-    allW = np.zeros((len(sigmaList)+1, N,K,D,C)) 
+    allW = np.zeros((len(sigmaList)+1, N, K, D, C)) 
 
-    oneSessInd = [0,N] # treating whole dataset as one session for normal GLM-HMM fitting
     dGLM_HMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
     
     # first one is standard GLM-HMM (sigma=0)
-    if (glmhmmW is not None and glmhmmP is not None): # if parameters are given from standard GLM-HMM 
-        oldSessInd = [0, glmhmmW.shape[0]] # assuming glmhmmW has constant weights
-        allP[0] = np.copy(glmhmmP) # K x K transition matrix
-        allW[0] = reshapeWeights(glmhmmW, oldSessInd, oneSessInd, standardGLMHMM=True)
-        allpi[0] = np.ones((K))/K
+    if (glmhmmW is not None and glmhmmP is not None): # if parameters are given from standard GLM-HMM (constant across sessions)
+        initP = np.zeros((N, K, K))
+        initpi = np.ones((K)) / K
+        initW = np.zeros((N, K, D, C))
+        initP[:] = glmhmmP[0]
+        initW[:] = glmhmmW[0]
     else:
-        initP, initpi, initW = dGLMHMM.generate_param(sessInd=sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)], model_type='standard') 
+        initP, initpi, initW = dGLM_HMM.generate_param(sessInd=sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)], model_type='standard') 
   
-    # fit standard GLM-HMM for this particular dataset initialized with global ones or randomly (as above)
+    # fit and evaluate standard GLM-HMM for this particular dataset initialized with global ones or randomly (as above)
+    indSigma = 0
+    irrelevantSigma = np.ones((K,D))
+    allP[indSigma], allpi[indSigma], allW[indSigma], trainLl[indSigma] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-3, L2penaltyW=L2penaltyW, priorDirP=priorDirP, model_type='standard', fit_init_states=fit_init_states) 
+    testLlSessions[indSigma], testLl[indSigma], testAccuracy[indSigma] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[indSigma], allpi[indSigma], allW[indSigma])
 
-    for indSigma in range(0,len(sigmaList)): 
+    for indSigma in range(1,len(sigmaList)+1): 
 
         # initializing from previous fit
         initP = allP[indSigma-1] 
@@ -155,7 +159,7 @@ def fit_eval_CV_multiple_sigmas(K, x, y, sessInd, presentTrain, presentTest, sig
         initW = allW[indSigma-1] 
 
         # fitting dGLM-HMM
-        allP[indSigma], allpi[indSigma], allW[indSigma], trainLl[indSigma] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(sigmaList[indSigma], K, D), sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='partial', L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states) 
+        allP[indSigma], allpi[indSigma], allW[indSigma], trainLl[indSigma] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(sigmaList[indSigma-1], K, D), sessInd=sessInd, maxIter=maxiter, tol=1e-3, L2penaltyW=L2penaltyW, priorDirP=priorDirP, model_type='partial', fit_init_states=fit_init_states) 
         
         # evaluate 
         testLlSessions[indSigma], testLl[indSigma], testAccuracy[indSigma] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[indSigma], allpi[indSigma], allW[indSigma])
