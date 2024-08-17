@@ -32,21 +32,21 @@ if ('CSHL_007' in subjectsAll):
 if ('CSHL049' in subjectsAll):
     subjectsAll.remove('CSHL049')
 
-df = pd.DataFrame(columns=['subject','K','signedStimulus']) # in total z=0,199 inclusively
+df = pd.DataFrame(columns=['subject','K']) # in total z=0,199 inclusively
 z = 0
 for subject in subjectsAll:
     for K in [1,2,3,4,5]:
         for signedStimulus in [False, True]:
             df.loc[z, 'subject'] = subject
             df.loc[z, 'K'] = K
-            df.loc[z,'signedStimulus'] = signedStimulus
             z += 1
 
 # read from cluster array in order to get parallelizations
 idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
 subject = df.loc[idx,'subject']
 K = df.loc[idx,'K']
-signedStimulus = df.loc[idx,'signedStimulus']
+
+signedStimulus = True
 
 # load data for particular animal
 pTanh = 5
