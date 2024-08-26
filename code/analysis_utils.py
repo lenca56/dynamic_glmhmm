@@ -137,19 +137,16 @@ def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigma
     
     # first one is standard GLM-HMM (sigma=0)
     if (glmhmmW is not None and glmhmmP is not None): # if parameters are given from standard GLM-HMM (constant across sessions)
-        initP = np.zeros((N, K, K))
-        initpi = np.ones((K)) / K
-        initW = np.zeros((N, K, D, C))
-        initP[:] = glmhmmP[0]
-        initW[:] = glmhmmW[0]
+        allpi[0] = np.ones((K)) / K
+        allP[0, :] = glmhmmP[0]
+        allW[0, :] = glmhmmW[0]
     else:
         initP, initpi, initW = dGLM_HMM.generate_param(sessInd=sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)], model_type='standard') 
-  
-    # fit and evaluate standard GLM-HMM for this particular dataset initialized with global ones or randomly (as above)
-    indSigma = 0
-    irrelevantSigma = np.ones((K,D))
-    allP[indSigma], allpi[indSigma], allW[indSigma], trainLl[indSigma] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-3, L2penaltyW=L2penaltyW, priorDirP=priorDirP, model_type='standard', fit_init_states=fit_init_states) 
-    testLlSessions[indSigma], testLl[indSigma], testAccuracy[indSigma] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[indSigma], allpi[indSigma], allW[indSigma])
+        # fit standard GLM-HMM 
+        irrelevantSigma = np.ones((K,D))
+        allP[0], allpi[0], allW[0], trainLl[0] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=irrelevantSigma, sessInd=sessInd, maxIter=maxiter, tol=1e-3, L2penaltyW=L2penaltyW, priorDirP=priorDirP, model_type='standard', fit_init_states=fit_init_states) 
+    
+    testLlSessions[0], testLl[0], testAccuracy[0] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[0], allpi[0], allW[0])
 
     for indSigma in range(1,len(sigmaList)+1): 
 

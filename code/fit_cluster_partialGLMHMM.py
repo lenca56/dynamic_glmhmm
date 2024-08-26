@@ -32,11 +32,10 @@ if ('CSHL_007' in subjectsAll):
 if ('CSHL049' in subjectsAll):
     subjectsAll.remove('CSHL049')
 
-df = pd.DataFrame(columns=['subject','K']) # in total z=0,199 inclusively
+df = pd.DataFrame(columns=['subject','K']) # in total z=0,159 inclusively
 z = 0
 for subject in subjectsAll:
     for K in [1,2,3,4,5]:
-        for signedStimulus in [False, True]:
             df.loc[z, 'subject'] = subject
             df.loc[z, 'K'] = K
             z += 1
@@ -46,6 +45,7 @@ idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
 subject = df.loc[idx,'subject']
 K = df.loc[idx,'K']
 
+# whether to have left and ride stimuli within one variable or two
 signedStimulus = True
 
 # load data for particular animal
@@ -84,4 +84,4 @@ for fold in range(0,splitFolds):
     allP[fold], _, allW[fold], trainLl[fold], testLlSessions[fold], testLl[fold], testAccuracy[fold] = fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain[fold], presentTest[fold], sigmaList=sigmaList, maxiter=maxiter, glmhmmW=glmhmmW, glmhmmP=glmhmmP, glmhmmpi=glmhmmpi, L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states)
 
 # saving parameters (per-session to optimize memory)
-np.savez(f'../data_IBL/{subject}_partialGLMHMM_CV_{K}-state_pTanh={pTanh}_signedStimulus={signedStimulus}', allP=allP[:,:,sessInd[:-1]], allW=allW[:,:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
+np.savez(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_pTanh={pTanh}_signedStimulus={signedStimulus}', allP=allP[:,:,sessInd[:-1]], allW=allW[:,:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
