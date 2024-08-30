@@ -50,7 +50,7 @@ K = df.loc[idx,'K']
 fold = df.loc[idx,'fold']
 
 # whether to have left and ride stimuli within one variable or two
-signedStimulus = True
+signedStimulus = False
 
 # load data for particular animal
 pTanh = 5
