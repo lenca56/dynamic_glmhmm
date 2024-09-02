@@ -35,7 +35,7 @@ if ('CSHL049' in subjectsAll):
 
 df = pd.DataFrame(columns=['subject','fold','K']) # in total z=0,159 inclusively
 z = 0
-for K in [1,2,3,4,5]:
+for K in [4,5]:#[1,2,3,4,5]:
     for subject in subjectsAll:
             for fold in range(splitFolds):
                 df.loc[z, 'subject'] = subject
@@ -50,7 +50,7 @@ K = df.loc[idx,'K']
 fold = df.loc[idx,'fold']
 
 # whether to have left and ride stimuli within one variable or two
-signedStimulus = False
+signedStimulus = True
 
 # load data for particular animal
 pTanh = 5
