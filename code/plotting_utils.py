@@ -229,7 +229,7 @@ def plot_posteior_latent(gamma, sessInd, axes, sessions = [10,20,30], linewidth=
             axes[i].plot(np.arange(sessInd[sessions[i]+1]-sessInd[sessions[i]]), gamma[sessInd[sessions[i]]:sessInd[sessions[i]+1],k], color=colorsStates[k], label=f'state {k+1}', linewidth=linewidth)
         axes[i].legend(loc = 'center left', bbox_to_anchor=(0.99, 0.4))
 
-def plotting_psychometric(w, sessInd, session, axes, colorsStates, title=f'session', linestyle='-', size=24):
+def plotting_psychometric(w, sessInd, session, axes, colorsStates, signedStimulus=True, title=f'session', linestyle='-', size=24):
     ''' 
     '''
     N = w.shape[0]
@@ -237,21 +237,33 @@ def plotting_psychometric(w, sessInd, session, axes, colorsStates, title=f'sessi
     D = w.shape[2]
     C = w.shape[3]
 
-    d = 2
-    x = np.ones((N, d)) # bias and delta stimulus only
-    x[:,1] = np.linspace(-2,2,N)
+    if signedStimulus == True: # signed stimulus contrast = contrast Right - contrast Left
+        d = 2
+        x = np.ones((N, d)) # bias and delta stimulus only
+        x[:,1] = np.linspace(-2,2,N)
 
-    dGLMHMM = dglm_hmm1.dGLM_HMM1(N,K,D,C)
-    phi = dGLMHMM.observation_probability(x, np.repeat(w[sessInd[session]][np.newaxis], N, axis=0)[:,:,:d,:])
+        dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
+        phi = dGLMHMM.observation_probability(x, np.repeat(w[sessInd[session]][np.newaxis], N, axis=0)[:,:,:d,:])
+        for k in range(K-1,-1,-1):
+            axes.plot(np.linspace(-2,2,N), phi[:,k,1], color=colorsStates[k], linewidth=3, label=f'state {k+1}', linestyle=linestyle)
+
+
+    elif signedStimulus == False:
+        d = 3 # bias, contrast right, contrast left
+        x = np.zeros((N, d)) # bias and delta stimulus only
+        x[:,0] = 1
+        x[int(N/2)-1::-1,2] = np.linspace(0,2,int(N/2))
+        x[int(N/2):,1] = np.linspace(0,2,N-int(N/2))
+    
+        dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
+        phi = dGLMHMM.observation_probability(x, np.repeat(w[sessInd[session]][np.newaxis], N, axis=0)[:,:,:d,:])
+        for k in range(K-1,-1,-1):
+            axes.plot(np.linspace(-2,2,N), phi[:,k,1], color=colorsStates[k], linewidth=3, label=f'state {k+1}', linestyle=linestyle)
 
     axes.set_title(title, size=size)
     axes.set_ylim(-0.01,1.01)
     axes.set_ylabel('P(Right)', size=size-2)
     axes.set_xlabel('stimulus', size=size-2)
-
-    for k in range(K-1,-1,-1):
-        axes.plot(np.linspace(-2,2,N), phi[:,k,0], color=colorsStates[k], linewidth=3, label=f'state {k+1}', linestyle=linestyle)
-
     axes.legend(loc='lower right')
 
 def plot_state_occupancy_sessions(gamma, sessInd, axes, colors=colorsStates, linewidth=3, size=24):

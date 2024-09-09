@@ -51,6 +51,15 @@ def reshapeSigma(sigma, K, D):
 
     return newSigma
 
+def reshape_parameters_session_to_trials(w, p, sessInd):
+    w_new = np.zeros((sessInd[-1],w.shape[1],w.shape[2], w.shape[3]))
+    p_new = np.zeros((sessInd[-1],p.shape[1],p.shape[2]))
+    for sess in range(len(sessInd)-1):
+        w_new[sessInd[sess]:sessInd[sess+1]] = w[sess]
+        p_new[sessInd[sess]:sessInd[sess+1]] = p[sess]
+    
+    return w_new, p_new
+
 def reshapeWeights(w, oldSessInd, newSessInd, standardGLMHMM=False):
     ''' 
     reshaping weights from session indices of oldSessInd to session indices of newSessInd

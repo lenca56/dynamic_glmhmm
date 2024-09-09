@@ -61,7 +61,7 @@ for subject in subjectsAll:
         y = np.concatenate((y,yTemp))
         sessInd = sessInd + [i + sessInd[-1] for i in sessIndTemp[1:]]
 
-np.savez(f'../data_IBL/Data_allAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}', x=x, y=y, sessInd=sessInd)
+np.savez(f'../data_IBL/all_animals/Data_allAnimals_pTanh={pTanh}_signedStimulus={signedStimulus}', x=x, y=y, sessInd=sessInd)
 
 N = x.shape[0]
 D = x.shape[1]
@@ -78,5 +78,5 @@ standardP, standardpi, standardW, _ = dGLMHMM.fit(x, y,  present, initP=initP, i
 _, trainLl, trainAccuracy  = dGLMHMM.evaluate(x, y, sessInd, present, standardP, standardpi, standardW)
 
 # saving parameters for each session to optimize memory
-np.savez(f'../data_IBL/allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_init={init}_signedStimulus={signedStimulus}', P=standardP[sessInd[:-1]], pi=standardpi, W=standardW[sessInd[:-1]], trainLl=trainLl, trainAccuracy=trainAccuracy)
+np.savez(f'../data_IBL/all_animals/allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_init={init}_signedStimulus={signedStimulus}', P=standardP[sessInd[:-1]], pi=standardpi, W=standardW[sessInd[:-1]], trainLl=trainLl, trainAccuracy=trainAccuracy)
 

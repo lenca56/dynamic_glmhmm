@@ -35,7 +35,7 @@ if ('CSHL049' in subjectsAll):
 
 df = pd.DataFrame(columns=['subject','fold','K']) # in total z=0,159 inclusively
 z = 0
-for K in [4,5]:#[1,2,3,4,5]:
+for K in [3,4,5]:
     for subject in subjectsAll:
             for fold in range(splitFolds):
                 df.loc[z, 'subject'] = subject
@@ -53,7 +53,7 @@ fold = df.loc[idx,'fold']
 signedStimulus = True
 
 # load data for particular animal
-pTanh = 5
+pTanh = 0.01
 x, y, sessInd, correctSide = get_mouse_design(dfAll, subject=subject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) # with tanh transformation
 sess = len(sessInd) - 1
 
@@ -77,7 +77,7 @@ fit_init_states = False
 # allW = np.zeros((splitFolds, len(sigmaList)+ 1, N, K, D, 2)) 
 
 # initialize model from best fitting parameters of standard GLM-HMM
-dataInit = np.load(f'../data_IBL/Best_allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_signedStimulus={signedStimulus}.npz')
+dataInit = np.load(f'../data_IBL/all_animals/Best_allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_signedStimulus={signedStimulus}.npz')
 glmhmmP = dataInit['P']
 glmhmmpi = dataInit['pi']
 glmhmmW = dataInit['W']

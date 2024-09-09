@@ -58,8 +58,8 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
         y = np.array(dataTemp['choice'])
 
         x[:,0] = 1 # bias or offset is first column
-        x[:,1] = cR # contrast left transformed 
-        x[:,2] = cL # contrast right transformed
+        x[:,1] = cR # contrast right transformed 
+        x[:,2] = cL # contrast left transformed
         # not taking into account first and last of each session 
         x[1:,3] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's {-1,1}
         x[1:,4] = 2 * np.array(dataTemp['correctSide'])[0:-1] - 1 # previous reward as in Zoe's {-1,1}
