@@ -35,7 +35,7 @@ if ('CSHL049' in subjectsAll):
 
 df = pd.DataFrame(columns=['subject','fold','K']) # in total z=0,159 inclusively per fold
 z = 0
-for K in [3,4,5]:
+for K in [1,2]:
     for subject in subjectsAll:
             for fold in range(splitFolds):
                 df.loc[z, 'subject'] = subject
