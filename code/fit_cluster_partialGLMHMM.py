@@ -63,8 +63,8 @@ D = x.shape[1]
 C = 2
 presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
 sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
-L2penaltyW = 0
-priorDirP = [10,1]
+L2penaltyW = 1 #0
+priorDirP = [100,10] #[10,1]
 maxiter = 300
 fit_init_states = False
 
