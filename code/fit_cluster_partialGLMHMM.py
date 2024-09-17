@@ -86,4 +86,4 @@ glmhmmW = dataInit['W']
 allP, _, allW, trainLl, testLlSessions, testLl, testAccuracy = fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain[fold], presentTest[fold], sigmaList=sigmaList, maxiter=maxiter, glmhmmW=glmhmmW, glmhmmP=glmhmmP, glmhmmpi=glmhmmpi, L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states)
 
 # saving parameters (per-session to optimize memory)
-np.savez(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_signedStimulus={signedStimulus}', allP=allP[:,sessInd[:-1]], allW=allW[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
+np.savez(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', allP=allP[:,sessInd[:-1]], allW=allW[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
