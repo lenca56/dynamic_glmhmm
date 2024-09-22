@@ -53,7 +53,7 @@ fold = df.loc[idx,'fold']
 signedStimulus = True
 
 # load data for particular animal
-pTanh = 0.01
+pTanh = 5
 x, y, sessInd, correctSide = get_mouse_design(dfAll, subject=subject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) # with tanh transformation
 sess = len(sessInd) - 1
 
@@ -63,7 +63,7 @@ D = x.shape[1]
 C = 2
 presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
 sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
-L2penaltyW = 1 #0
+L2penaltyW = 0
 priorDirP = [100,10] #[10,1]
 maxiter = 300
 fit_init_states = False
