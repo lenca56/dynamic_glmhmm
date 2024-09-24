@@ -163,7 +163,7 @@ def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigma
 
     return allP, allpi, allW, trainLl, testLlSessions, testLl, testAccuracy
 
-def fit_eval_CV_multiple_alphas(K, x, y, sessInd, presentTrain, presentTest, alphaList=[0, 1, 10, 100, 1000, 10000], maxiter=200, dglmhmmW=None, globalP=None, bestSigma=None, L2penaltyW=1, fit_init_states=False):
+def fit_eval_CV_full_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, alphaList=[0, 1, 10, 100, 1000, 10000], maxiter=200, dglmhmmW=None, globalP=None, bestSigma=None, L2penaltyW=1, fit_init_states=False):
     ''' 
     fitting function for multiple values of sigma with initializing from the previously found parameters with increasing order of fitting sigma
     first sigma is 0 and is the GLM-HMM fit

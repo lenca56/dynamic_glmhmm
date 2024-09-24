@@ -1,8 +1,6 @@
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
-# from oneibl.onelight import ONE # only used for downloading data
-# import wget
 from utils import *
 from plotting_utils import *
 from analysis_utils import *
@@ -64,7 +62,7 @@ C = 2
 presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
 sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
 L2penaltyW = 0
-priorDirP = [100,10] #[10,1]
+priorDirP = [10,1]
 maxiter = 300
 fit_init_states = False
 
