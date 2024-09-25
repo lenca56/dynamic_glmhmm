@@ -66,14 +66,6 @@ priorDirP = [10,1]
 maxiter = 300
 fit_init_states = False
 
-# # initializing parameters and functions to save across all sigmas and folds
-# trainLl = np.zeros((splitFolds, len(sigmaList) + 1, maxiter))
-# testLl = np.zeros((splitFolds, len(sigmaList) + 1))
-# testLlSessions = np.zeros((splitFolds, len(sigmaList) + 1, sess))
-# testAccuracy = np.zeros((splitFolds, len(sigmaList) + 1))
-# allP = np.zeros((splitFolds, len(sigmaList) + 1, N, K, K))
-# allW = np.zeros((splitFolds, len(sigmaList)+ 1, N, K, D, 2)) 
-
 # initialize model from best fitting parameters of standard GLM-HMM
 dataInit = np.load(f'../data_IBL/all_animals/Best_allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_signedStimulus={signedStimulus}.npz')
 glmhmmP = dataInit['P']

@@ -163,12 +163,9 @@ def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigma
 
     return allP, allpi, allW, trainLl, testLlSessions, testLl, testAccuracy
 
-def fit_eval_CV_full_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, alphaList=[0, 1, 10, 100, 1000, 10000], maxiter=200, dglmhmmW=None, globalP=None, bestSigma=None, L2penaltyW=1, fit_init_states=False):
+def fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, alphaList=[0, 1, 10, 100, 1000, 10000], maxiter=200, partial_glmhmmW=None, globalP=None, partial_glmhmmpi=None, bestSigma=None, L2penaltyW=0, fit_init_states=False):
     ''' 
-    fitting function for multiple values of sigma with initializing from the previously found parameters with increasing order of fitting sigma
-    first sigma is 0 and is the GLM-HMM fit
-    each CV fold is fit individually
-
+    
     Parameters
     ----------
     K: int
@@ -209,28 +206,35 @@ def fit_eval_CV_full_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, 
     N = x.shape[0]
     D = x.shape[1]
     C = 2 # only looking at binomial classes
+    sess = len(sessInd) - 1
 
     trainLl = np.zeros((len(alphaList)+1, maxiter))
     testLl = np.zeros((len(alphaList)+1))
+    testLlSessions = np.zeros((len(alphaList)+1, sess))
     testAccuracy = np.zeros((len(alphaList)+1))
     allP = np.zeros((len(alphaList)+1, N, K, K))
     allpi = np.zeros((len(alphaList)+1, K))
     allW = np.zeros((len(alphaList)+1, N,K,D,C)) 
 
-    dGLM_HMM2 = dynamic_glmhmm.dGLM_HMM2(N,K,D,C)
+    dGLM_HMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
 
-    if (dglmhmmW is None or globalP is None): # fitting dGLM-HMM1 where only weights are varying
-        raise Exception("dglmhmmW AND  globalP need to be given from dGLM-HMM1 parameter fitting of best sigma")
+    if (partial_glmhmmW is None or globalP is None): # fitting partial dynamic GLM-HMM, in which only weights are varying
+        raise Exception("partial_glmhmmW AND globalP need to be given from partial dyanmic GLM-HMM parameter fitting of best sigma")
     if (bestSigma is None): # fitting dGLM-HMM1 where only weights are varying
-        raise Exception("bestSigma need to be given from dGLM-HMM1 fitting of best sigma value")
+        raise Exception("bestSigma need to be given from partial dyanmic GLM-HMM parameter fitting of best sigma")
     
-    allP[len(alphaList)] = reshapeP_M1_to_M2(globalP, N)
-    allpi[len(alphaList)] = np.ones((K))/K    
-    allW[len(alphaList)] = np.copy(dglmhmmW)
+    # model equivalent to alpha -> infinity
+    allP[len(alphaList)] = reshapeP_M1_to_M2(globalP, N) 
+    allW[len(alphaList)] = np.copy(partial_glmhmmW)
+
+    if fit_init_states == False:
+        allpi[len(alphaList)] = np.ones((K))/K 
+    else:
+        allpi[len(alphaList)] = partial_glmhmmpi
     
     # evaluate dGLMHMM1 fit
-    testLl[len(alphaList)], testAccuracy[len(alphaList)] = dGLM_HMM2.evaluate(x, y, sessInd, presentTest, allP[len(alphaList)], allpi[len(alphaList)], allW[len(alphaList)], sortStates=False)
-
+    testLlSessions[len(alphaList)], testLl[len(alphaList)], testAccuracy[len(alphaList)] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[len(alphaList)], allpi[len(alphaList)], allW[len(alphaList)])
+    
     for indAlpha in range(len(alphaList)-1,-1,-1): 
 
         # initializing from previous fit which means higher alpha
@@ -239,13 +243,12 @@ def fit_eval_CV_full_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, 
         initW = allW[indAlpha+1] 
             
         # fitting dGLM-HMM
-        allP[indAlpha], allpi[indAlpha], allW[indAlpha], trainLl[indAlpha] = dGLM_HMM2.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(bestSigma, K, D), alpha=alphaList[indAlpha], globalP=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, L2penaltyW=L2penaltyW, fit_init_states=fit_init_states) 
+        allP[indAlpha], allpi[indAlpha], allW[indAlpha], trainLl[indAlpha] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(bestSigma, K, D), alpha=alphaList[indAlpha], A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
    
         # evaluate 
-        testLl[indAlpha], testAccuracy[indAlpha] = dGLM_HMM2.evaluate(x, y, sessInd, presentTest, allP[indAlpha], allpi[indAlpha], allW[indAlpha], sortStates=False)
+        testLlSessions[indAlpha], testLl[indAlpha], testAccuracy[indAlpha] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[indAlpha], allpi[indAlpha], allW[indAlpha])
 
-    return allP, allpi, allW, trainLl, testLl, testAccuracy
-
+    return allP, allpi, allW, trainLl, testLlSessions, testLl, testAccuracy
 
 def fit_eval_CV_2Dsigmas(K, x, y, sessInd, presentTrain, presentTest, sigmaList=[0.01, 0.1, 1, 10, 100], maxiter=300, glmhmmW=None, glmhmmP=None, L2penaltyW=1, priorDirP = [10,1], stimCol=None, fit_init_states=False):
     ''' 

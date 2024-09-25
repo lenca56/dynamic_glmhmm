@@ -33,16 +33,16 @@ if ('CSHL049' in subjectsAll):
 
 df = pd.DataFrame(columns=['subject','fold','K']) # in total z=0,159 inclusively per fold
 z = 0
-for K in [3,4,5]:
+for K in [2,3,4]:
     for subject in subjectsAll:
             for fold in range(splitFolds):
                 df.loc[z, 'subject'] = subject
                 df.loc[z, 'K'] = K
                 df.loc[z, 'fold'] = fold
-                z += 1
-
+                z += 1 
+print(z)
 # read from cluster array in order to get parallelizations
-idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
+idx = 0 #int(os.environ["SLURM_ARRAY_TASK_ID"])
 subject = df.loc[idx,'subject']
 K = df.loc[idx,'K']
 fold = df.loc[idx,'fold']
@@ -60,28 +60,23 @@ N = x.shape[0]
 D = x.shape[1]
 C = 2
 presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
-sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
+alphaList = [2] #[2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
 L2penaltyW = 0
-priorDirP = [100,10] #[10,1]
-maxiter = 300
+maxiter = 2 #200
 fit_init_states = False
 
-# # initializing parameters and functions to save across all sigmas and folds
-# trainLl = np.zeros((splitFolds, len(sigmaList) + 1, maxiter))
-# testLl = np.zeros((splitFolds, len(sigmaList) + 1))
-# testLlSessions = np.zeros((splitFolds, len(sigmaList) + 1, sess))
-# testAccuracy = np.zeros((splitFolds, len(sigmaList) + 1))
-# allP = np.zeros((splitFolds, len(sigmaList) + 1, N, K, K))
-# allW = np.zeros((splitFolds, len(sigmaList)+ 1, N, K, D, 2)) 
-
 # initialize model from best fitting parameters of standard GLM-HMM
-dataInit = np.load(f'../data_IBL/all_animals/Best_allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_signedStimulus={signedStimulus}.npz')
-glmhmmP = dataInit['P']
-glmhmmpi = dataInit['pi']
-glmhmmW = dataInit['W']
+sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
+bestSigmaInd = 8 # TO CHECK1!!!!!!!!!!!
+# check chekc chekc
+bestSigma = sigmaList[bestSigmaInd]
+
+dataInit = data = np.load(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}.npz')
+globalP = dataInit['allP'][bestSigmaInd,0]
+partial_glmhmmW, _ = reshape_parameters_session_to_trials(dataInit['allW'][bestSigmaInd], dataInit['allP'][bestSigmaInd], sessInd)
 
 # fitting
-allP, _, allW, trainLl, testLlSessions, testLl, testAccuracy = fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain[fold], presentTest[fold], sigmaList=sigmaList, maxiter=maxiter, glmhmmW=glmhmmW, glmhmmP=glmhmmP, glmhmmpi=glmhmmpi, L2penaltyW=L2penaltyW, priorDirP=priorDirP, fit_init_states=fit_init_states)
-
+allP, _, allW, trainLl, testLlSessions, testLl, testAccuracy = fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain[fold], presentTest[fold], alphaList=alphaList, maxiter=maxiter, partial_glmhmmW=partial_glmhmmW, globalP=globalP, partial_glmhmmpi=None, bestSigma=bestSigma, L2penaltyW=L2penaltyW, fit_init_states=fit_init_states)
+   
 # saving parameters (per-session to optimize memory)
-np.savez(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', allP=allP[:,sessInd[:-1]], allW=allW[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
+np.savez(f'../data_IBL/{subject}/{subject}_dynamicGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', allP=allP[:,sessInd[:-1]], allW=allW[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)

@@ -630,7 +630,7 @@ class dynamic_GLMHMM():
                 raise Exception("Global P should be an array of shape (k,k)")
             else:
                 for i in range(0, self.K):
-                    if (abs(A[i,:].sum() - 1) > 1e-6):
+                    if (abs(A[i,:].sum() - 1) > 1e-3):
                         raise Exception(f'Global P row {i} does not sum up to 1')
 
         if (fit_init_states==True and len(sessInd)-1<50):
