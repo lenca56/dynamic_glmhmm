@@ -40,9 +40,8 @@ for K in [2,3,4]:
                 df.loc[z, 'K'] = K
                 df.loc[z, 'fold'] = fold
                 z += 1 
-print(z)
 # read from cluster array in order to get parallelizations
-idx = 0 #int(os.environ["SLURM_ARRAY_TASK_ID"])
+idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
 subject = df.loc[idx,'subject']
 K = df.loc[idx,'K']
 fold = df.loc[idx,'fold']
@@ -60,16 +59,15 @@ N = x.shape[0]
 D = x.shape[1]
 C = 2
 presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
-alphaList = [2] #[2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
+alphaList = [2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
 L2penaltyW = 0
-maxiter = 2 #200
+maxiter = 200
 fit_init_states = False
 
-# initialize model from best fitting parameters of standard GLM-HMM
+# initialize model from best fitting parameters of standard GLM-HMM, checked in Figure4-5.ipynb
 sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
-bestSigmaInd = 8 # TO CHECK1!!!!!!!!!!!
-# check chekc chekc
-bestSigma = sigmaList[bestSigmaInd]
+bestSigmaInd = 8 
+bestSigma = sigmaList[bestSigmaInd-1]
 
 dataInit = data = np.load(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}.npz')
 globalP = dataInit['allP'][bestSigmaInd,0]
