@@ -41,7 +41,7 @@ for K in [2,3,4]:
                 df.loc[z, 'fold'] = fold
                 z += 1 
 # read from cluster array in order to get parallelizations
-idx = 0 #int(os.environ["SLURM_ARRAY_TASK_ID"])
+idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
 subject = df.loc[idx,'subject']
 K = df.loc[idx,'K']
 fold = df.loc[idx,'fold']
@@ -59,9 +59,9 @@ N = x.shape[0]
 D = x.shape[1]
 C = 2
 presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
-alphaList = [2,10] #[2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
+alphaList = [2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
 L2penaltyW = 0
-maxiter = 1 #200
+maxiter = 200
 fit_init_states = False
 
 # initialize model from best fitting parameters of standard GLM-HMM, checked in Figure4-5.ipynb
