@@ -48,6 +48,8 @@ for idx in range(100):
     K = df.loc[idx,'K']
     fold = df.loc[idx,'fold']
 
+    print(subject)
+
     # whether to have left and ride stimuli within one variable or two
     signedStimulus = True
 
