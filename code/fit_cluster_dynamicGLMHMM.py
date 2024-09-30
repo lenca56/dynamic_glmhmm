@@ -42,7 +42,7 @@ for K in [2,3,4]:
                 z += 1 
 
 # read from cluster array in order to get parallelizations
-for idx in range(100):
+for idx in range(480):
     # idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
     subject = df.loc[idx,'subject']
     K = df.loc[idx,'K']
