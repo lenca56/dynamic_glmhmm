@@ -42,43 +42,40 @@ for K in [2,3,4]:
                 z += 1 
 
 # read from cluster array in order to get parallelizations
-for idx in range(480):
-    # idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
-    subject = df.loc[idx,'subject']
-    K = df.loc[idx,'K']
-    fold = df.loc[idx,'fold']
+idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
+subject = df.loc[idx,'subject']
+K = df.loc[idx,'K']
+fold = df.loc[idx,'fold']
 
-    print(subject)
+# whether to have left and ride stimuli within one variable or two
+signedStimulus = True
 
-    # whether to have left and ride stimuli within one variable or two
-    signedStimulus = True
+# load data for particular animal
+pTanh = 5
+x, y, sessInd, correctSide = get_mouse_design(dfAll, subject=subject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) # with tanh transformation
+sess = len(sessInd) - 1
 
-    # load data for particular animal
-    pTanh = 5
-    x, y, sessInd, correctSide = get_mouse_design(dfAll, subject=subject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) # with tanh transformation
-    sess = len(sessInd) - 1
+# setting hyperparameters
+N = x.shape[0]
+D = x.shape[1]
+C = 2
+presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
+alphaList = [2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
+L2penaltyW = 0
+maxiter = 200
+fit_init_states = False
 
-    # setting hyperparameters
-    N = x.shape[0]
-    D = x.shape[1]
-    C = 2
-    presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
-    alphaList = [2] #[2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
-    L2penaltyW = 0
-    maxiter = 1 #200
-    fit_init_states = False
+# initialize model from best fitting parameters of standard GLM-HMM, checked in Figure4-5.ipynb
+sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
+bestSigmaInd = 8 
+bestSigma = sigmaList[bestSigmaInd-1]
 
-    # initialize model from best fitting parameters of standard GLM-HMM, checked in Figure4-5.ipynb
-    sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
-    bestSigmaInd = 8 
-    bestSigma = sigmaList[bestSigmaInd-1]
+dataInit = data = np.load(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}.npz')
+globalP = dataInit['allP'][bestSigmaInd,0]
+partial_glmhmmW, _ = reshape_parameters_session_to_trials(dataInit['allW'][bestSigmaInd], dataInit['allP'][bestSigmaInd], sessInd)
 
-    dataInit = data = np.load(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}.npz')
-    globalP = dataInit['allP'][bestSigmaInd,0]
-    partial_glmhmmW, _ = reshape_parameters_session_to_trials(dataInit['allW'][bestSigmaInd], dataInit['allP'][bestSigmaInd], sessInd)
-
-# # fitting
-# allP, _, allW, trainLl, testLlSessions, testLl, testAccuracy = fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain[fold], presentTest[fold], alphaList=alphaList, maxiter=maxiter, partial_glmhmmW=partial_glmhmmW, globalP=globalP, partial_glmhmmpi=None, bestSigma=bestSigma, L2penaltyW=L2penaltyW, fit_init_states=fit_init_states)
+# fitting
+allP, _, allW, trainLl, testLlSessions, testLl, testAccuracy = fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain[fold], presentTest[fold], alphaList=alphaList, maxiter=maxiter, partial_glmhmmW=partial_glmhmmW, globalP=globalP, partial_glmhmmpi=None, bestSigma=bestSigma, L2penaltyW=L2penaltyW, fit_init_states=fit_init_states)
    
-# # saving parameters (per-session to optimize memory)
-# np.savez(f'../data_IBL/{subject}/{subject}_dynamicGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', allP=allP[:,sessInd[:-1]], allW=allW[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
+# saving parameters (per-session to optimize memory)
+np.savez(f'../data_IBL/{subject}/{subject}_dynamicGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', allP=allP[:,sessInd[:-1]], allW=allW[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
