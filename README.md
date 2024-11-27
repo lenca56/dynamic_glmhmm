@@ -3,15 +3,18 @@ This package provides flexible and easy-to-use code for fitting Generalized Line
 
 # Package Contents
 
-----.yml: enivornment used **etc**
+----.yml: enivornment used with all packages
+
 dynamic_glmhmm.py: Standard or Dynamic GLM-HMM class fitting code
+
 analysis_utils.py: a script containing functions for CV fitting models to find hyperparameters
+
 utils.py: a script containing miscellaneous helper functions
 
 fit_cluster_GLM_all.py: a script of 
 
-
 data_IBL: a folder including pre-processed design matrix for all animals and choice behavior used in  **<cite paper>**
+
 models_IBL: a folder showing best-fitting model parameters shown in **<cite paper>**
 
 Each of the following jupyter notebooks recreates the plots from figures in **<cite paper>**
