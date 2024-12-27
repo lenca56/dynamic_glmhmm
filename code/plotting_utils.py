@@ -164,7 +164,7 @@ def plotting_weights_per_feature(w, sessInd, axes, trueW=None, yLim=[[-2.2,2.2],
     sess = len(sessInd)-1
 
     for d in range(0,D):
-        axes[d].axhline(0, alpha=0.2, color='black',linestyle='-')
+        axes[d].axhline(0, alpha=0.2, color='gray',linestyle='-', linewidth=0.5)
         for k in range(0, K):
             if (legend==True):
                 axes[d].plot(range(1,sess+1),w[sessInd[:-1],k,d,1],color=colors[k],linewidth=linewidth,label=f'state {k+1}', alpha=alpha, linestyle=linestyle)
