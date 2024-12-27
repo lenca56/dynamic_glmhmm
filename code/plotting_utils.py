@@ -16,8 +16,8 @@ colormap = sns.color_palette("viridis")
 colors_dark = ['darkblue','darkred','darkgreen','darkgoldenrod']
 colors_light = ['royalblue','indianred','limegreen','gold']
 colorsFeatures = [['#FAA61A','indigo','#99CC66','#59C3C3','#9593D9'],['#FAA61A',"#2369BD","#A9373B",'#99CC66','#59C3C3','#9593D9']]
-#colorsStates = ['darkorange','darkblue','forestgreen','purple']
-colorsStates = ['tab:orange','tab:blue', 'tab:green','tab:red']
+# colorsStates = ['tab:orange','tab:blue', 'tab:green','tab:red']
+colorsStates = ["#2369BD",'#FAA61A',"#A9373B",'#99CC66','#59C3C3','#9593D9']
 myFeatures = [['bias','delta stimulus', 'previous choice', 'previous reward'],['bias','contrast left','contrast right', 'previous choice', 'previous reward']]
 
 def plotting_weights(w, sessInd, axes, trueW=None, title='', colors=colorsStates, sortedStateInd=None, size=24):
@@ -74,7 +74,7 @@ def plotting_self_transition_probabilities(p, sessInd, axes, linewidth=5, linest
     axes.set_ylim(0.6,1)
     axes.set_xlabel('session', size=size-2)
 
-def plot_testLl_CV_sigma(testLl, sigmaList, label, color, axes, linestyle='-o', alpha=1, size=24):
+def plot_testLl_CV_sigma(testLl, sigmaList, label, color, axes, linestyle='-o', alpha=1, size=24, linewidth=1):
     '''  
     function that plots test LL as a function of sigma 
 
@@ -89,7 +89,7 @@ def plot_testLl_CV_sigma(testLl, sigmaList, label, color, axes, linestyle='-o', 
     sigmaListOdd = [sigmaList[ind] for ind in range(len(sigmaList)) if ind%2==1] #+ [sigmaList[ind] for ind in range(11,len(sigmaList))]
     sigmaList3 = [sigmaList[ind] for ind in range(len(sigmaList)) if ind%3==1]
     # sigmaListOdd = [sigmaList[ind] for ind in range(11) if ind%2==1] #+ [sigmaList[ind] for ind in range(11,len(sigmaList))]
-    axes.plot(np.log(sigmaList[1:]), testLl[1:], linestyle, color=color, label=label, alpha=alpha)
+    axes.plot(np.log(sigmaList[1:]), testLl[1:], linestyle, color=color, label=label, alpha=alpha, linewidth=linewidth)
     if(sigmaList[0]==0):
         axes.scatter(-2 + np.log(sigmaList[1]), testLl[0], color=color, alpha=alpha)
         axes.set_xticks([-2 + np.log(sigmaList[1])]+list(np.log(sigmaList3)),['GLM-HMM'] + [f'{np.round(sigma,3)}' for sigma in sigmaList3])
@@ -229,7 +229,7 @@ def plot_posteior_latent(gamma, sessInd, axes, sessions = [10,20,30], linewidth=
             axes[i].plot(np.arange(sessInd[sessions[i]+1]-sessInd[sessions[i]]), gamma[sessInd[sessions[i]]:sessInd[sessions[i]+1],k], color=colorsStates[k], label=f'state {k+1}', linewidth=linewidth)
         axes[i].legend(loc = 'center left', bbox_to_anchor=(0.99, 0.4))
 
-def plotting_psychometric(w, sessInd, session, axes, colorsStates, signedStimulus=True, title=f'session', linestyle='-', size=24):
+def plotting_psychometric(w, sessInd, session, axes, colorsStates, signedStimulus=True, title=f'session', linestyle='-', size=24, linewidth=1):
     ''' 
     '''
     N = w.shape[0]
@@ -245,7 +245,7 @@ def plotting_psychometric(w, sessInd, session, axes, colorsStates, signedStimulu
         dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
         phi = dGLMHMM.observation_probability(x, np.repeat(w[sessInd[session]][np.newaxis], N, axis=0)[:,:,:d,:])
         for k in range(K-1,-1,-1):
-            axes.plot(np.linspace(-2,2,N), phi[:,k,1], color=colorsStates[k], linewidth=3, label=f'state {k+1}', linestyle=linestyle)
+            axes.plot(np.linspace(-2,2,N), phi[:,k,1], color=colorsStates[k], linewidth=linewidth, label=f'state {k+1}', linestyle=linestyle)
 
 
     elif signedStimulus == False:
@@ -258,7 +258,7 @@ def plotting_psychometric(w, sessInd, session, axes, colorsStates, signedStimulu
         dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
         phi = dGLMHMM.observation_probability(x, np.repeat(w[sessInd[session]][np.newaxis], N, axis=0)[:,:,:d,:])
         for k in range(K-1,-1,-1):
-            axes.plot(np.linspace(-2,2,N), phi[:,k,1], color=colorsStates[k], linewidth=3, label=f'state {k+1}', linestyle=linestyle)
+            axes.plot(np.linspace(-2,2,N), phi[:,k,1], color=colorsStates[k], linewidth=linewidth, label=f'state {k+1}', linestyle=linestyle)
 
     axes.set_title(title, size=size)
     axes.set_ylim(-0.01,1.01)
