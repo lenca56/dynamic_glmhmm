@@ -101,7 +101,7 @@ def plot_testLl_CV_sigma(testLl, sigmaList, label, color, axes, linestyle='-o', 
     if (label is not None):
         axes.legend(loc='lower right')
 
-def plot_testLl_CV_alpha(testLl, alphaList, label, color, axes, linestyle='-o', alpha=1, size=24):
+def plot_testLl_CV_alpha(testLl, alphaList, label, color, axes, linestyle='-o', alpha=1, size=24, linewidth=3):
     '''  
     function that plots test LL as a function of sigma 
 
@@ -112,7 +112,7 @@ def plot_testLl_CV_alpha(testLl, alphaList, label, color, axes, linestyle='-o', 
     sigmaList: list
 
     '''
-    axes.plot(np.log10(alphaList), testLl[:-1], linestyle, color=color, label=label, alpha=alpha)
+    axes.plot(np.log10(alphaList), testLl[:-1], linestyle, color=color, label=label, alpha=alpha, linewidth=linewidth)
     alphaListEven = [alphaList[ind] for ind in range(0,len(alphaList),2)]
     axes.set_xticks(np.log10(alphaListEven),[f'{np.round(alpha,1)}' for alpha in alphaListEven])
     axes.set_ylabel('Test log-like (per trial)', size=size-2)
