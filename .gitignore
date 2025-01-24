@@ -2,6 +2,7 @@
 *.npy
 *.npz
 data/**
+models/**
 data_simulated/**
 data_IBL/**
 logs/**
