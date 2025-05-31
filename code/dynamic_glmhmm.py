@@ -6,46 +6,48 @@ from utils import *
 from plotting_utils import *
 from scipy.stats import multivariate_normal
 from sklearn.model_selection import KFold
-# from autograd import value_and_grad, hessian
-# from jax import value_and_grad
-# import jax.numpy as jnp
 
 class dynamic_GLMHMM():
     """
-    Class for fitting drifting GLM-HMM model (in which both weights and transition matrix can vary across sessions)
-    Code just works for c=2 at the moment !
-    Weights for class c=0 are always kept to 0 
+    Class for fitting dynamic GLM-HMM model (in which both weights and transition matrix can vary across sessions)
+    
+    Currently working for C=2 (binary observations)
+    Weights for class c=0 are always kept to 0 so there is effectively a single class of weights for binary choices
 
     Notation: 
-        N: number of data points
+        N: number of total data points
+        T: number of data points considered
         K: number of states (states)
         D: number of features (inputs to design matrix)
-        C: number of classes (possible observations)
+        C: number of classes (possible observations/choices)
         x: design matrix (n x d)
         y: observations (n x c) or (n x 1)
-        w: weights mapping x to y (n x k x d x c)
+        w: GLM weights mapping x to y (n x k x d x c)
+        model_type: str
+            if 'standard': weights and transition matrix are constant across sessions
+            if 'partial': transition matrix is constant across sesssions but weights vary across sessions
+            if 'dynamic': both weights and transition matrix vary across sessions
     """
 
     def __init__(self, N, K, D, C):
             self.N, self.K, self.D, self.C  = N, K, D, C
     
-    # Iris' fct has columns reverrsed
     def log_observation_probability(self, x, w):
         '''
-        Calculating log of observation probabilities for part/all of design matrix x and weight matrix w
-        C = 2 only
+        Calculating logarithm of observation probabilities = log p(y | x, w) 
+        for part/all of design matrix x and weight matrix w
 
         Parameters
         ----------
         x: T x D numpy array
-            input matrix
+            input/design matrix
         w: T x K x D x C numpy array
             weight matrix
 
         Returns
         -------
         logphi: T x K x C numpy array
-            log of observation probabilities matrix (already normalized inside log)
+            log of observation probabilities matrix 
         '''
         T = x.shape[0] # not necessarily the full dataset
 
@@ -62,26 +64,24 @@ class dynamic_GLMHMM():
         for k in range(0, K): 
             logphi[:,k,1] = - softplus(-np.sum(w[:,k,:,1]*x,axis=1)) # p(y_t=1) = 1 / (1 + exp (-xw))
             logphi[:,k,0] = - softplus(np.sum(w[:,k,:,1]*x,axis=1)) # p(y_t=0) = exp (-xw) / (1 + exp (-xw))
-            # logphi[:,k,1] = - softplus(np.sum(w[:,k,:,1]*x,axis=1)) # reversed (as in old version)
-            # logphi[:,k,0] = - softplus(-np.sum(w[:,k,:,1]*x,axis=1)) # 
             
         return logphi
 
     def observation_probability(self, x, w):
         ''' 
-        function that calculates observation probabilities by taking exp of log observation prob
+        function that calculates observation probabilities by taking exp of log_observation_probability function
 
         Parameters
         ----------
-        x: Ncurrent x D numpy array
+        x: T x D numpy array
             input matrix
-        w: Ncurrent x K x D x C numpy array
+        w: T x K x D x C numpy array
             weight matrix
 
         Returns
         -------
-        phi: Ncurrent x K x C numpy array
-            observation probabilities matrix (already normalized inside log)
+        phi: T x K x C numpy array
+            observation probabilities matrix 
         '''
 
         phi = self.log_observation_probability(x, w)
@@ -91,29 +91,27 @@ class dynamic_GLMHMM():
 
     def simulate_data(self, trueW, trueP, truepi, sessInd):
         '''
-        function that simulates X and Y data from true weights and true transition matrix
+        function that simulates x and y data from a set of true weights and true transition matrix
 
         Parameters
         ----------
         trueW: N x K x D x C numpy array
             true weight matrix. for C=2, trueW[:,:,:,1] = 0 
         trueP: N x K x K numpy array
-            true probability transition matrix
-        truepi: k x 1 numpy vector
-            probabilities for first latent of each session
+            true probability transition matrices
+        truepi: K x 1 numpy vector
+            true probabilities for first latent of each session
         sessInd: list of int
             indices of each session start, together with last session end + 1
-        save: boolean
-            whether to save out simulated data
         
         Returns
         -------
-        x: n x d numpy array
-            simulated design matrix
-        y: n x 1 numpy array
-            simulated observation vector
-        z: n x 1 numpy array
-            simulated hidden states vector
+        x: N x D numpy array
+            simulated design matrix containing two features: bias and stimulus
+        y: N x 1 numpy array
+            simulated observation vector (choices)
+        z: N x 1 numpy array
+            simulated hidden states vector (internal state)
 
         '''
         # check that weight and transition matrices are consistent with model hyperparameters
@@ -126,26 +124,27 @@ class dynamic_GLMHMM():
         y = np.zeros((self.N, self.C)).astype(int)
         z = np.zeros((self.N,),dtype=int)
 
-        # input data x
-        x[:,0] = 1 # bias term
-        x[:,1] = stats.uniform.rvs(loc=-16,scale=33,size=self.N).astype(int)
-        # standardizing sensory info
+        # input/design matrix x
+        x[:,0] = 1 # bias feature
+        x[:,1] = stats.uniform.rvs(loc=-16,scale=33,size=self.N).astype(int) # stimulus feature
+        # standardizing stimulus 
         x[:,1] = x[:,1] - x[:,1].mean()
         x[:,1] = x[:,1] / x[:,1].std()
 
-        if (self.K==1):
+        if (self.K==1): # if there is only a single state (classic GLM)
             z[:] = 0
         else:
-            # latent variables z 
+            # generating latent variables z 
             for t in range(0, self.N):
-                if (t in sessInd[:-1]): # beginning of session has a new draw for latent
+                if (t in sessInd[:-1]): # beginning of session has a new draw for latent from distribution true pi
                     z[t] = np.random.choice(range(0, self.K), p=truepi)
-                else:
+                else: # next draw comes from transition matrix probabilities
                     z[t] = np.random.choice(range(0, self.K), p=trueP[t,z[t-1],:])
         
         # observation probabilities
         phi = self.observation_probability(x, trueW)
 
+        # generating choices y based on observation probability and generated latent z
         for t in range(0, self.N):
             y[t,int(np.random.binomial(n=1, p=phi[t,z[t],1]))]=1 
         
@@ -153,35 +152,36 @@ class dynamic_GLMHMM():
 
         return x, y, z
 
-    
     def forward_pass(self, y, present, P, pi, phi, startSessInd=[0]):
         '''
-        Calculates alpha scaled as part of the forward-backward algorithm in E-step 
+        forward pass in forward-backward algorithm in E-step (from Expectation-Maximization algorithm)
+        that can omit "missing" data which is used for testing
        
         Parameters
         ----------
         y : T x 1 numpy vector 
             vector of observations with values 0,1,..,C-1
         present: T x 1 numpy vector
-            0 means missing data (p(y_t=missing)=1 and 1 means present
-        P : n x k x k numpy array
+            0 means missing data and 1 means present
+        P : N x K x K numpy array
             matrix of transition probabilities
-        pi: k x 1 numpy vector
-            p(z_1) for z_1 first latent of every session
+        pi: K x 1 numpy vector
+            probabilities for first latent of every session
         phi : T x k x  c numpy array
             matrix of observation probabilities
         startSessInd: list of int
-            if [0], then it means it's a single sessioon, else it's start indices of multiple sessions
+            if [0], then it means it's a single session, else it's start indices of multiple sessions
         
         Returns
         -------
         alpha : T x k numpy vector
-            matrix of the conditional probabilities p(z_t|x_{1:t},y_{1:t})
+            matrix of the forward conditional probabilities p(z_t|x_{1:t},y_{1:t})
         ct : T x 1 numpy vector
-            vector of the forward marginal likelihoods p(y_t | y_1:t-1)
+            vector of the forward marginal likelihoods p(y_t|y_1:t-1)
         ll : float
-            marginal log-likelihood of the data p(y)
+            marginal log-likelihood of the data p(y_{1:T})
         '''
+
         T = y.shape[0]
         
         alpha = np.zeros((T, self.K)).astype(float) # forward probabilities p(z_t | y_1:t)
@@ -190,16 +190,16 @@ class dynamic_GLMHMM():
 
         # forward pass calculations
         for t in range(0,T):
-            if (t in startSessInd): # time point 0
-                # prior of z_1 before any data 
-                alpha_prior[t,:] = pi #np.ones((1,self.k))/self.k = uniform prior
+            if (t in startSessInd): # first trial of a session
+                # prior of first latent before any data 
+                alpha_prior[t,:] = pi 
             else:
-                alpha_prior[t,:] = (alpha[t-1,:].T @ P[t]) # conditional p(z_t | y_1:t-1)
+                alpha_prior[t,:] = (alpha[t-1,:].T @ P[t]) # conditional prior p(z_t | y_1:t-1)
 
             if (present[t]==1): # NOT missing data
                 pxz = np.multiply(phi[t,:,y[t]], alpha_prior[t,:]) # joint P(y_1:t, z_t)
-                ct[t] = np.sum(pxz) # conditional p(y_t | y_1:t-1)
-                alpha[t,:] = pxz/ct[t] # conditional p(z_t | y_1:t)
+                ct[t] = np.sum(pxz) # marginal likelihood p(y_t | y_1:t-1)
+                alpha[t,:] = pxz/ct[t] # forward conditional p(z_t | y_1:t)
             elif (present[t]==0): # missing data -> all derivations come from p(y_t=missing)=1
                 ct[t] = 1 # so np.log(ct[t])=0 likelihood term not included
                 alpha[t,:] = alpha_prior[t,:]
@@ -212,20 +212,23 @@ class dynamic_GLMHMM():
     
     def backward_pass(self, y, present, P, phi, ct, startSessInd=[0]):
         '''
-        Calculates beta scaled as part of the forward-backward algorithm in E-step 
+        backward pass in forward-backward algorithm in E-step (from Expectation-Maximization algorithm)
+        that can omit "missing" data which is used for testing 
 
         Parameters
         ----------
         y : T x 1 numpy vector
             vector of observations with values 0,1,..,C-1
-        p : n x k x k numpy array
+        p : N x K x K numpy array
             matrix of transition probabilities
-        phi : T x k x c numppy array
+        phi : T x K x C numppy array
             matrix of observation probabilities
         ct : T x 1 numpy vector 
             veector of forward marginal likelihoods p(y_t | y_1:t-1), calculated at forward_pass
         present: T numpy vector
-            0 means missing data (p(y_t=missing)=1), 1 means present
+            0 means missing data 1 means present
+        startSessInd: list of int
+            if [0], then it means it's a single session, else it's start indices of multiple sessions
 
         Returns
         -------
@@ -249,18 +252,19 @@ class dynamic_GLMHMM():
                     beta[t,:] = P[t+1] @ (np.multiply(beta[t+1,:],phi[t+1,:,y[t+1]]))
                     beta[t,:] = beta[t,:] / ct[t+1] # scaling factor
                 elif (present[t+1] == 0): # missing data
-                    if (ct[t+1] != 1): # c[t+1] = 1 already from forward pass
+                    if (ct[t+1] != 1): 
                         raise Exception("c[t] should already be 1 from forward pass -> present in backward might not be matching with forward")
-                    beta[t,:] = P[t+1] @ beta[t+1,:] # CHECK THIS
+                    beta[t,:] = P[t+1] @ beta[t+1,:] 
                 else:
                     raise Exception('present vector can only have 0s and 1s')
         
         return beta
     
-    def posteriorLatents(self, y, present, p, phi, alpha, beta, ct, startSessInd=[0]):
+    def posteriorLatents_EM(self, y, present, p, phi, alpha, beta, ct, startSessInd=[0]):
         ''' 
-        calculates marginal posterior of latents gamma(z_t) = p(z_t | y_1:T)
-        and joint posterior of successive latens zeta(z_t, z_t+1) = p(z_t, z_t+1 | y_1:T)
+        calculates marginal posterior of latents gamma(z_t) = p(z_t | y_1:T), 
+        in other words, the likelihood of being in each state given the data: gamma(z_t)
+        and joint posterior of successive latent states zeta(z_t, z_t+1) = p(z_t, z_t+1 | y_1:T)
 
         Parameters
         ----------
@@ -276,13 +280,16 @@ class dynamic_GLMHMM():
             matrix of backward conditional probabilities p(y_t+1:T | z_t) / p(y_t+1:T | y_1:t)
         ct : T x 1 numpy vector
             vector of the forward marginal likelihoods p(y_t | y_1:t-1)
+        startSessInd: list of int
+            if [0], then it means it's a single session, else it's start indices of multiple sessions
         
         Returns
         -------
         gamma: T x k numpy array
-            matrix of marginal posterior of latents p(z_t | y_1:T)
+            matrix of marginal posterior of latents given all observations p(z_t | y_1:T)
+            = likelihood of being in each state given the data
         zeta: T-1 x k x k 
-            matrix of joint posterior of successive latens p(z_t, z_t+1 | y_1:T)
+            matrix of joint posterior of two successive latents given all observations p(z_t, z_t+1 | y_1:T)
         '''
         
         T = ct.shape[0]
@@ -294,7 +301,7 @@ class dynamic_GLMHMM():
 
         # zeta(z_t, z_t+1) =  alpha(z_t) * beta(z_t+1) * p (z_t+1 | z_t) * p(y_t+1 | z_t+1) / c_t+1
         for t in range(0,T-1):
-            if (t+1 not in startSessInd): # to include these terms or not?
+            if (t+1 not in startSessInd): # only computing zeta for consecutive terms within same session
                 if (present[t+1] == 1): # NOT missing data
                     alpha_beta = alpha[t,:].reshape((self.K, 1)) @ beta[t+1,:].reshape((1, self.K))
                     zeta[t,:,:] = np.multiply(alpha_beta, p[t+1]) 
@@ -309,38 +316,11 @@ class dynamic_GLMHMM():
                     raise Exception('present vector can only have 0s and 1s')
             
         return gamma, zeta
-
-    def get_states_in_time(self, x, y, w, p, pi, sessInd=None):
-        ''' 
-        function that gets the distribution of states across trials/time-points after assigning the states with respective maximum probabilities
-        '''
-        T = x.shape[0]
-
-        if sessInd is None:
-            sessInd = [0, T]
-            sess = 1 # entire data set has one session
-        else:
-            sess = len(sessInd)-1 # total number of sessions 
-
-        # calculate observation probabilities given theta_old
-        phi = self.observation_probability(x, w)
-        
-        zStates = np.zeros((T)).astype(int)
-
-        for s in range(0,sess):
-        # E step - forward and backward passes given theta_old (= previous w and p)
-            alphaSess, ctSess, _ = self.forward_pass(y[sessInd[s]:sessInd[s+1]], p[sessInd[s]:sessInd[s+1]], pi, phi[sessInd[s]:sessInd[s+1],:,:])
-            betaSess = self.backward_pass(y[sessInd[s]:sessInd[s+1]], p[sessInd[s]:sessInd[s+1]], phi[sessInd[s]:sessInd[s+1],:,:], ctSess)
-            gammaSess, _ = self.posteriorLatents(y[sessInd[s]:sessInd[s+1]], p[sessInd[s]:sessInd[s+1]], phi[sessInd[s]:sessInd[s+1],:,:], alphaSess, betaSess, ctSess)
-            
-            # assigning max probabiity state to trial
-            zStates[sessInd[s]:sessInd[s+1]] = np.argmax(gammaSess, axis=1)
-        
-        return zStates
     
     def generate_param(self, sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)], model_type='standard'):
         ''' 
-        Function that generates parameters w and P and is used for initialization of parameters during fitting
+        Function that generates random parameters w and P 
+        and is used for initialization of parameters during fitting
 
         Parameters
         ----------
@@ -353,11 +333,17 @@ class dynamic_GLMHMM():
             first is str of distribution type, second is parameter tuple
                 uniform distribution comes with (low, high) 
                 normal distribution comes with (mean, std)
+        model_type: str
+            if 'standard': weights and transition matrix are constant across sessions
+            if 'partial': transition matrix is constant across sesssions but weights vary across sessions
+            if 'dynamic': both weights and transition matrix vary across sessions
 
         Returns
         ----------
         p: T x k x k numpy array
             probability transition matrix
+        pi: 1 x K numpy array
+            probability of first latent in each session
         w: T x k x d x c numpy array
             weight matrix. for c=2, trueW[:,:,:,1] = 0 
         
@@ -441,6 +427,10 @@ class dynamic_GLMHMM():
             weights of next session
         sigma: d numpy vector
             std parameters of normal distribution for each state and each feature
+        model_type: str
+            if 'standard': weights and transition matrix are constant across sessions
+            if 'partial': transition matrix constant across sesssions but weights vary across sessions
+            if 'dynamic': both weights and transition matrix vary across sessions
         
         Returns
         ----------
@@ -451,10 +441,6 @@ class dynamic_GLMHMM():
 
         # number of datapoints
         T = x.shape[0]
-
-        # check model type
-
-        model_type = 'standard'
 
         sessW = np.zeros((T, 1, self.D, self.C)) # K=1
         for t in range(0,T):
@@ -485,11 +471,11 @@ class dynamic_GLMHMM():
                 raise Exception("Sigma should not contain any 0s if model_type is not standard, but values very close to 0 are allowed")
 
             if (prevW is not None):
-                # logpdf of multivariate normal (ignoring pi constant)
-                lf +=  -1/2 * np.log(det) - 1/2 * (currentW[:] - prevW[:]).T @ invCov @ (currentW[:] - prevW[:])
+                # logpdf of multivariate normal (ignoring pi constant) # -1/2 * np.log(det) 
+                lf += - 1/2 * (currentW[:] - prevW[:]).T @ invCov @ (currentW[:] - prevW[:])
             if (nextW is not None):
                 # logpdf of multivariate normal (ignoring pi constant)
-                lf += -1/2 * np.log(det) - 1/2 * (currentW[:] - nextW[:]).T @ invCov @ (currentW[:] - nextW[:])
+                lf += - 1/2 * (currentW[:] - nextW[:]).T @ invCov @ (currentW[:] - nextW[:])
         else:
             raise Exception("model_type can only be standard (static weights and transition matrix), partial (dynamic weights and static transition matrix), or dynamic (dynamic weights and transition matrix)")
 
@@ -524,6 +510,10 @@ class dynamic_GLMHMM():
             weights of next session
         sigma: k x d numpy array
             std parameters of normal distribution for each state and each feature
+        model_type: str
+            if 'standard': weights and transition matrix are constant across sessions
+            if 'partial': transition matrix constant across sesssions but weights vary across sessions
+            if 'dynamic': both weights and transition matrix vary across sessions
         
         Returns
         ----------
@@ -543,7 +533,8 @@ class dynamic_GLMHMM():
         grad = np.zeros((self.D))
         for t in range(0, T):
             if (present[t] == 1): # only for present data (not missing)
-                grad += gamma[t] * (softplus_deriv(-x[t] @ currentW) - (1 - y[t])) * x[t]
+                grad += gamma[t] * (y[t] - softplus_deriv(x[t] @ currentW)) * x[t]
+                #(softplus_deriv(-x[t] @ currentW) - (1 - y[t])) * x[t]
 
         if model_type == 'standard': # standard GLM-HMM (static weights and transition matrix across sessions)
 
@@ -578,7 +569,7 @@ class dynamic_GLMHMM():
 
         Parameters
         ----------
-        x: T x d numpy array
+        x: T x D numpy array
             design matrix
         y : T x 1 numpy vector 
             vector of observations with values 0,1,..,C-1
@@ -599,6 +590,10 @@ class dynamic_GLMHMM():
             The tolerance value for the loglikelihood to allow early stopping of EM. The default is 1e-3.
         priorDirP: list of length 2
             diagonal and off diagonal terms for Dirichlet prior (+1) on transition matrix 
+        model_type: str
+            if 'standard': weights and transition matrix are constant across sessions
+            if 'partial': transition matrix constant across sesssions but weights vary across sessions
+            if 'dynamic': both weights and transition matrix vary across sessions
         
         Returns
         -------
@@ -617,10 +612,10 @@ class dynamic_GLMHMM():
         p = np.copy(initP)
         pi = np.copy(initpi)
 
-        # initialize zeta = joint posterior of successive latents 
-        zeta = np.zeros((T-1, self.K, self.K)).astype(float) 
-        # initialize gamma postierior of latents
-        gamma = np.zeros((T, self.K)).astype(float)
+        # # initialize zeta = joint posterior of successive latents 
+        # zeta = np.zeros((T-1, self.K, self.K)).astype(float) 
+        # # initialize gamma postierior of latents
+        # gamma = np.zeros((T, self.K)).astype(float)
         # initialize marginal log likelihood p(y)
         ll = np.zeros((maxIter)).astype(float) 
 
@@ -632,32 +627,26 @@ class dynamic_GLMHMM():
                 for i in range(0, self.K):
                     if (abs(A[i,:].sum() - 1) > 1e-3):
                         raise Exception(f'Global P row {i} does not sum up to 1')
+                    
+        sess = len(sessInd)-1 # total number of sessions
 
-        if (fit_init_states==True and len(sessInd)-1<50):
+        if (fit_init_states==True and sess<20):
             raise Exception("Should not fit init states when less than 20 sessions due to high uncertainty")
 
-        sess = len(sessInd)-1 # total number of sessions
-        startSessInd = sessInd[:-1] # only the first trial of each session
-
         for iter in range(maxIter):
-            # if (iter%100==0):
-            #     print(iter)
+            if (iter%100==0):
+                print(iter)
                 
-            # calculate observation probabilities given theta_old
+            # calculate observation probabilities given parameters from previous iteration
             phi = self.observation_probability(x, w)
 
-            # E-step for each session 
+            # E-step for all sessions
+            alpha_forward, ct, ll[iter] = self.forward_pass(y, present, p, pi, phi, startSessInd=sessInd[:-1])
+            beta = self.backward_pass(y, present, p, phi, ct, startSessInd=sessInd[:-1])
+            gamma, zeta = self.posteriorLatents_EM(y, present, p, phi, alpha_forward, beta, ct, startSessInd=sessInd[:-1])
+            
+            # M-step for each session
             for s in range(0,sess):
-                    
-                # E step - forward and backward passes given theta_old (= previous w and p)
-                alphaSess, ctSess, llSess = self.forward_pass(y[sessInd[s]:sessInd[s+1]], present, p[sessInd[s]:sessInd[s+1]], pi, phi[sessInd[s]:sessInd[s+1],:,:], startSessInd)
-                betaSess = self.backward_pass(y[sessInd[s]:sessInd[s+1]], present, p[sessInd[s]:sessInd[s+1]], phi[sessInd[s]:sessInd[s+1],:,:], ctSess, startSessInd)
-                gammaSess, zetaSess = self.posteriorLatents(y[sessInd[s]:sessInd[s+1]], present, p[sessInd[s]:sessInd[s+1]], phi[sessInd[s]:sessInd[s+1],:,:], alphaSess, betaSess, ctSess, startSessInd)
-                    
-                # merging zeta for all sessions 
-                zeta[sessInd[s]:sessInd[s+1]-1,:,:] = zetaSess[:,:,:] 
-                gamma[sessInd[s]:sessInd[s+1]] = gammaSess
-                ll[iter] += llSess
 
                 if model_type in ['partial','dynamic']: # models with weights varying across sessions
 
@@ -665,18 +654,18 @@ class dynamic_GLMHMM():
                         prevW = w[sessInd[s-1],k,:,1] if s!=0 else None #  d x c matrix of previous session weights
                         nextW = w[sessInd[s+1],k,:,1] if s!=sess-1 else None #  d x c matrix of next session weights
                         w_flat = np.ndarray.flatten(w[sessInd[s],k,:,1]) # flatten weights for optimization 
-                        opt_val = lambda w: self.value_weight_loss_function(w, x[sessInd[s]:sessInd[s+1]], y[sessInd[s]:sessInd[s+1]], present, gammaSess[:,k], prevW, nextW, sigma[k,:], model_type=model_type, L2penaltyW=L2penaltyW)
-                        opt_grad = lambda w: self.grad_weight_loss_function(w, x[sessInd[s]:sessInd[s+1]], y[sessInd[s]:sessInd[s+1]], present, gammaSess[:,k], prevW, nextW, sigma[k,:], model_type=model_type, L2penaltyW=L2penaltyW)
+                        opt_val = lambda w: self.value_weight_loss_function(w, x[sessInd[s]:sessInd[s+1]], y[sessInd[s]:sessInd[s+1]], present[sessInd[s]:sessInd[s+1]], gamma[sessInd[s]:sessInd[s+1],k], prevW, nextW, sigma[k,:], model_type=model_type, L2penaltyW=L2penaltyW)
+                        opt_grad = lambda w: self.grad_weight_loss_function(w, x[sessInd[s]:sessInd[s+1]], y[sessInd[s]:sessInd[s+1]], present[sessInd[s]:sessInd[s+1]], gamma[sessInd[s]:sessInd[s+1],k], prevW, nextW, sigma[k,:], model_type=model_type, L2penaltyW=L2penaltyW)
                         optimized = minimize(opt_val, w_flat, jac=opt_grad, method='L-BFGS-B')
                         w[sessInd[s]:sessInd[s+1],k,:,1] = optimized.x # updating weight w for current session
 
-                # M-step for transition matrix P for each session - closed form update (dynamic model)
+                # M-step for session-varying transition matrix P  - closed form update (dynamic model)
                 if model_type == 'dynamic':
                     for i in range(0, self.K):
                         for j in range(0, self.K):
-                            p[sessInd[s]:sessInd[s+1],i,j] = (zetaSess[:,i,j].sum() + alpha * A[i,j])/(zetaSess[:,i,:].sum() + alpha) 
+                            p[sessInd[s]:sessInd[s+1],i,j] = (zeta[sessInd[s]:sessInd[s+1]-1,i,j].sum() + alpha * A[i,j])/(zeta[sessInd[s]:sessInd[s+1]-1,i,:].sum() + alpha) 
                 
-            if model_type == 'standard':
+            if model_type == 'standard': # optimizing a single set of weights over all sessions
                 for k in range(0,self.K):
                     prevW = None #  d x c matrix of previous session weights
                     nextW = None #  d x c matrix of next session weights
@@ -718,7 +707,7 @@ class dynamic_GLMHMM():
 
         alpha, ct, ll = self.forward_pass(y, present, p, pi, phi, sessInd[:-1])
         beta = self.backward_pass(y, present, p, phi, ct, sessInd[:-1])
-        gamma, _ = self.posteriorLatents(y, present, p, phi, alpha, beta, ct, sessInd[:-1])
+        gamma, _ = self.posteriorLatents_EM(y, present, p, phi, alpha, beta, ct, sessInd[:-1])
 
         sess = len(sessInd) - 1
         llTest_per_session = np.zeros((sess))
@@ -744,7 +733,7 @@ class dynamic_GLMHMM():
             
         return llTest_per_session, llTest, accuracyTest 
 
-    def get_posterior_latent(self, p, pi, w, x, y, present, sessInd, sortedStateInd=None):
+    def posterior_likelihood_of_each_state(self, p, pi, w, x, y, present, sessInd, sortedStateInd=None):
         if (sortedStateInd is not None):
         # permute states
             w = w[:,sortedStateInd,:,:]
@@ -758,19 +747,15 @@ class dynamic_GLMHMM():
         else:
             sess = len(sessInd)-1 # total number of sessions 
 
-        gamma = np.zeros((T, self.K)).astype(float) 
         phi = self.observation_probability(x, w)
 
-        for s in range(0,sess):
-            # E step - forward and backward passes given theta_old (= previous w and p)
-            alphaSess, ctSess, llSess = self.forward_pass(y[sessInd[s]:sessInd[s+1]], present, p[sessInd[s]:sessInd[s+1]], pi, phi[sessInd[s]:sessInd[s+1],:,:])
-            betaSess = self.backward_pass(y[sessInd[s]:sessInd[s+1]], present, p[sessInd[s]:sessInd[s+1]], phi[sessInd[s]:sessInd[s+1],:,:], ctSess)
-            gammaSess, _ = self.posteriorLatents(y[sessInd[s]:sessInd[s+1]], present, p[sessInd[s]:sessInd[s+1]], phi[sessInd[s]:sessInd[s+1],:,:], alphaSess, betaSess, ctSess)
-            
-            # concatenating across sessions
-            gamma[sessInd[s]:sessInd[s+1],:] = gammaSess[:,:] 
+        # E-step for all sessions
+        alpha_forward, ct, _ = self.forward_pass(y, present, p, pi, phi, startSessInd=sessInd[:-1])
+        beta = self.backward_pass(y, present, p, phi, ct, startSessInd=sessInd[:-1])
+        gamma, _ = self.posteriorLatents_EM(y, present, p, phi, alpha_forward, beta, ct, startSessInd=sessInd[:-1])
         
         return gamma
+
     
   
 

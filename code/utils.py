@@ -183,7 +183,7 @@ def softplus(x):
 def softplus_deriv(x):
     '''
     derivative of softplus function
-    d/dx log (1 + exp(x)) = exp(x) / 1 + exp(x)
+    d/dx log (1 + exp(x)) = exp(x) / (1 + exp(x))
 
     '''
 

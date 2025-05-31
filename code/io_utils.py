@@ -35,11 +35,11 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
     
     # tanh transformation
     if pTanh is not None:
-        cL = np.tanh(pTanh * data['contrastLeft']) / np.tanh(pTanh) # tanh transformation of left contrasts
-        cR = np.tanh(pTanh * data['contrastRight']) / np.tanh(pTanh) # tanh transformation of right contrasts
+        cL = np.tanh(pTanh * dataTemp['contrastLeft']) / np.tanh(pTanh) # tanh transformation of left contrasts
+        cR = np.tanh(pTanh * dataTemp['contrastRight']) / np.tanh(pTanh) # tanh transformation of right contrasts
     else:
-        cL = data['contrastLeft']
-        cR = data['contrastRight']
+        cL = dataTemp['contrastLeft']
+        cR = dataTemp['contrastRight']
 
     # creating inputs and ouput arrays
     if signedStimulus == True:

@@ -273,7 +273,10 @@ def plot_state_occupancy_sessions(gamma, sessInd, axes, colors=colorsStates, lin
     K = gamma.shape[1]
     choiceHard = np.argmax(gamma, axis=1)
     count = np.zeros((len(sessInd)-1,K))
+    rate_switches = np.zeros((len(sessInd)-1))
     for sess in range(0,len(sessInd)-1):
+        changes = choiceHard[sessInd[sess]+1:sessInd[sess+1]] != choiceHard[sessInd[sess]:sessInd[sess+1]-1]
+        rate_switches[sess] = np.count_nonzero(changes) / (sessInd[sess+1] - sessInd[sess] - 1)
         for k in range(0,K):
             count[sess,k] = np.where(choiceHard[sessInd[sess]:sessInd[sess+1]] == k)[0].shape[0]/(sessInd[sess+1]-sessInd[sess]) * 100
     for k in range(0,K):
@@ -283,7 +286,7 @@ def plot_state_occupancy_sessions(gamma, sessInd, axes, colors=colorsStates, lin
     axes.set_ylim(0,100)
     axes.legend(loc='upper right')
 
-    return count
+    return count, rate_switches
 
 def plot_task_accuracy_states_sessions(gamma, y, correctSide, sessInd, axes, firstBlockSession=None, colors=colorsStates, linewidth=3):
     '''   
