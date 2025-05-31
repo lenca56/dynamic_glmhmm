@@ -3,7 +3,7 @@ This package provides flexible and easy-to-use code for fitting Generalized Line
 
 # Package Contents
 
-env.yml: enivornment used 
+env.yml: enivornment with all necessary packages
 
 dynamic_glmhmm.py: containing class code for fitting standard or dynamic GLM-HMM
 
