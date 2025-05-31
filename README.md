@@ -1,12 +1,12 @@
 # dynamic_glmhmm
-This package provides flexible and easy-to-use code for fitting Generalized Linear Models (GLMs), standard GLM-HMMs (also known as Input-Output HMMs or IO-HMMs), and **dynamic GLM-HMMs** (in which parameters are varying across sessions). The code currently allows fitting observational data of Bernoulli distributions, but can easily be adapted to fit observational data with more than two classes. Inference is done using a variation of the Expectation Maximization (EM) algorithm. See bioRxiv paper for more information.
+This package provides flexible and easy-to-use code for fitting Generalized Linear Models (GLMs), standard GLM-HMMs (also known as Input-Output HMMs or IO-HMMs), and **dynamic GLM-HMMs** (in which parameters are varying across sessions). The code currently allows fitting observations/output of Bernoulli distributions (binary choices), but can easily be adapted to fit observations/output with more than two classes. Inference is done using a variation of the Expectation Maximization (EM) algorithm. See bioRxiv paper for more information.
 
 # Package Contents
 
-----.yml: enivornment used **etc**
-dynamic_glmhmm.py: Standard or Dynamic GLM-HMM class fitting code
-analysis_utils.py: a script containing functions for CV fitting models to find hyperparameters
-utils.py: a script containing miscellaneous helper functions
+----.yml: enivornment used 
+dynamic_glmhmm.py: containing class code for fitting standard or dynamic GLM-HMM
+analysis_utils.py: containing functions for CV fitting models to find hyperparameters
+utils.py: containing miscellaneous helper functions
 
 fit_cluster_GLM_all.py: a script of 
 
