@@ -401,15 +401,12 @@ class dynamic_GLMHMM():
     def value_weight_loss_function(self, currentW, x, y, present, gamma, prevW, nextW, sigma, model_type = 'standard', L2penaltyW=0):
         ''' 
         weight loss function to optimize the weights in M-step of fitting function is calculated as negative of weighted log likelihood + prior terms 
-        coming from drifting wrt neighboring sessions
+        coming from drifting wrt neighboring sessions 
 
-        it also returns the gradient of the above function to be used for faster optimization 
-
-        for one state only
+        optimizes weights for one state
 
         L(currentW from state k) = sum_t gamma(z_t=k) * log p(y_t | z_t=k) + log P(currentW | prevW) + log P(currentW | nextW),
         where gamma matrix are fixed by old parameters but observation probabilities p(y_t | z_t=k) are updated with currentW
-
 
         Parameters
         ----------
@@ -419,6 +416,8 @@ class dynamic_GLMHMM():
             design matrix
         y : T numpy vector 
             vector of observations with values 0,1,..,C-1
+        present: T x 1 numpy vector
+            0 means missing data and 1 means present
         gamma: T numpy vector
             matrix of marginal posterior of latents p(z_t | y_1:T)
         prevW: d x c numpy array
@@ -436,7 +435,6 @@ class dynamic_GLMHMM():
         ----------
         -lf: float
             loss function for currentW to be minimized
-
         '''
 
         # number of datapoints
@@ -483,12 +481,12 @@ class dynamic_GLMHMM():
 
     def grad_weight_loss_function(self, currentW, x, y, present, gamma, prevW, nextW, sigma, model_type='standard', L2penaltyW=0):
         ''' 
-        weight loss function to optimize the weights in M-step of fitting function is calculated as negative of weighted log likelihood + prior terms 
+        gradient of weight loss function to optimize the weights in M-step of fitting function is calculated as negative of weighted log likelihood + prior terms 
         coming from drifting wrt neighboring sessions
 
-        it also returns the gradient of the above function to be used for faster optimization 
+        returns the gradient of the above function to be used for faster optimization 
 
-        for one state only
+        optimizes weights for one state 
 
         L(currentW from state k) = sum_t gamma(z_t=k) * log p(y_t | z_t=k) + log P(currentW | prevW) + log P(currentW | nextW),
         where gamma matrix are fixed by old parameters but observation probabilities p(y_t | z_t=k) are updated with currentW
@@ -502,6 +500,8 @@ class dynamic_GLMHMM():
             design matrix
         y : T x 1 numpy vector 
             vector of observations with values 0,1,..,C-1
+        present: T x 1 numpy vector
+            0 means missing data and 1 means present
         gamma: T x k numpy array
             matrix of marginal posterior of latents p(z_t | y_1:T)
         prevW: k x d x c numpy array
@@ -519,7 +519,6 @@ class dynamic_GLMHMM():
         ----------
         -lf: float
             loss function for currentW to be minimized
-
         '''
 
         # number of datapoints
@@ -533,8 +532,8 @@ class dynamic_GLMHMM():
         grad = np.zeros((self.D))
         for t in range(0, T):
             if (present[t] == 1): # only for present data (not missing)
+                #( y[t] - softplus_deriv(x[t] @ currentW) ) * x[t]
                 grad += gamma[t] * (y[t] - softplus_deriv(x[t] @ currentW)) * x[t]
-                #(softplus_deriv(-x[t] @ currentW) - (1 - y[t])) * x[t]
 
         if model_type == 'standard': # standard GLM-HMM (static weights and transition matrix across sessions)
 
@@ -573,6 +572,8 @@ class dynamic_GLMHMM():
             design matrix
         y : T x 1 numpy vector 
             vector of observations with values 0,1,..,C-1
+        present: T x 1 numpy vector
+            0 means missing data and 1 means present
         initP :k x k numpy array
             initial matrix of transition probabilities
         initW: n x k x d x c numpy array
@@ -584,7 +585,7 @@ class dynamic_GLMHMM():
             indices of each session start, together with last session end + 1
         pi0 : k x 1 numpy vector
             initial k x 1 vector of state probabilities for t=1.
-        maxiter : int
+        maxIter : int
             The maximum number of iterations of EM to allow. The default is 300.
         tol : float
             The tolerance value for the loglikelihood to allow early stopping of EM. The default is 1e-3.
@@ -594,16 +595,22 @@ class dynamic_GLMHMM():
             if 'standard': weights and transition matrix are constant across sessions
             if 'partial': transition matrix constant across sesssions but weights vary across sessions
             if 'dynamic': both weights and transition matrix vary across sessions
-        
+        fit_init_states: Boolean (default=False)
+            whether to fit or not distribution of first latent in every session
+            if not, it's assumed uniform
+            
         Returns
         -------
         p: k x k numpy array
             fitted probability transition matrix
         w: T x k x d x c numpy array
             fitteed weight matrix
+        p : K numpy vector
+            fixed / fitted distribution of first latent state in every session 
         ll: float
             marginal log-likelihood of the data p(y)
         '''
+
         # number of datapoints
         T = x.shape[0]
 
@@ -612,11 +619,6 @@ class dynamic_GLMHMM():
         p = np.copy(initP)
         pi = np.copy(initpi)
 
-        # # initialize zeta = joint posterior of successive latents 
-        # zeta = np.zeros((T-1, self.K, self.K)).astype(float) 
-        # # initialize gamma postierior of latents
-        # gamma = np.zeros((T, self.K)).astype(float)
-        # initialize marginal log likelihood p(y)
         ll = np.zeros((maxIter)).astype(float) 
 
         if model_type == 'dynamic':
@@ -697,7 +699,32 @@ class dynamic_GLMHMM():
 
     def evaluate(self, x, y, sessInd, presentTest, p, pi, w):
         ''' 
-        function that gives per session test log-like and test accuracy with forward pass using all data
+        function that computes per session test log-likelihood and test accuracy for the test set
+
+        Parameters
+        ----------
+        x: T x D numpy array
+            design matrix
+        y : T x 1 numpy vector 
+            vector of observations with values 0,1,..,C-1
+        sessInd: list of int
+            indices of each session start, together with last session end + 1
+        presentTtest: T x 1 numpy vector
+            0 means data not present in test set and 1 means present 
+        p: T x k x k numpy array
+            fitted probability transition matrix
+        pi : k x 1 numpy vector
+            fixed / fitted k x 1 vector of state probabilities for t=1.
+        w: T x k x d x c numpy array
+            fitted weight matrix
+
+        Returns
+        -------
+        llTest_per_session: sess numpy vector
+            average test log-likelihood per trial on the computed for each session separately 
+        llTest: float
+            average test log-likelihood per trial for all sessions
+        accuracyTest:
         '''
 
         N = x.shape[0]
@@ -734,6 +761,37 @@ class dynamic_GLMHMM():
         return llTest_per_session, llTest, accuracyTest 
 
     def posterior_likelihood_of_each_state(self, p, pi, w, x, y, present, sessInd, sortedStateInd=None):
+        ''' 
+
+        function that gives likelihood of being in each hidden state given the data and model parameters
+
+        Parameters
+        ----------
+        p: T x k x k numpy array
+            fitted probability transition matrix
+        pi : k x 1 numpy vector
+            initial k x 1 vector of state probabilities for t=1.
+        w: T x k x d x c numpy array
+            fitteed weight matrix
+        x: T x D numpy array
+            design matrix
+        y : T x 1 numpy vector 
+            vector of observations with values 0,1,..,C-1
+        present: T x 1 numpy vector
+            0 means missing data and 1 means present
+        sessInd: list of int
+            indices of each session start, together with last session end + 1
+        sortedStateInd: numpy array
+            contains reordering permutation of states, or None if no state reordering
+        
+        
+        Returns
+        -------
+        gamma: T x k numpy array
+            matrix of marginal posterior of latents given all observations p(z_t | y_1:T)
+            = likelihood of being in each state given the data
+        '''
+
         if (sortedStateInd is not None):
         # permute states
             w = w[:,sortedStateInd,:,:]
@@ -742,10 +800,7 @@ class dynamic_GLMHMM():
         T = x.shape[0]
 
         if sessInd is None:
-            sessInd = [0, T]
-            sess = 1 # equivalent to saying the entire data set has one session
-        else:
-            sess = len(sessInd)-1 # total number of sessions 
+            sessInd = [0, T] 
 
         phi = self.observation_probability(x, w)
 

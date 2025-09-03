@@ -12,9 +12,13 @@ def reshapeObs(y):
 
     Parameters
     ----------
+    y: T x C numpy array
+        output / observation array
 
     Returns
     -------
+    yNew: T numpy vector
+        output / observation array
     '''
     
     yNew = np.empty((y.shape[0],))
@@ -24,17 +28,23 @@ def reshapeObs(y):
 
 def reshapeSigma(sigma, K, D):
     ''' 
-    changing variance parameter sigma to have shape KxD
+    changing variance parameter sigma to have shape K x D
 
     Parameters
     ----------
     sigma: nonnegative floats
         either scalar, Kx1, 1xD, or KxD numpy array
+    K: int
+        number of states
+    D: int
+        number of input features / task covariates
 
     Returns
     -------
     newSigma: KxD numpy array
+        reshaped sigma matrix
     '''
+    
     newSigma = np.empty((K,D))
     if (isinstance(sigma, float)  == True) or isinstance(sigma, int)  == True:
         newSigma.fill(sigma)
@@ -47,11 +57,33 @@ def reshapeSigma(sigma, K, D):
     else:
         raise Exception('sigma can only be scalar, Kx1, 1xD, or KxD numpy array')
     
-    # add check of nonnegative elements
+    # check that it's all nonnegative elements
+    if np.any(newSigma < 0):
+        raise Exception('sigma can not have any negative elements')
 
     return newSigma
 
 def reshape_parameters_session_to_trials(w, p, sessInd):
+    ''' 
+    reshaping weight and transition matrices from per-session to per-trial 
+    (parameters are constant within session)
+
+    Parameters
+    ----------
+    w: S x K x D x C numpy array
+        weight matrix across S sessions
+    p: S x K x K numpy array
+        transition matrix across S sessions
+
+    Returns
+    -------
+    w_new: T x K x D x C numpy array
+        weight matrix across T trials spanning S sessions
+    p_new: T x K x K numpy array
+        transition matrix across T trials spanning S sessions
+    
+    '''
+
     w_new = np.zeros((sessInd[-1],w.shape[1],w.shape[2], w.shape[3]))
     p_new = np.zeros((sessInd[-1],p.shape[1],p.shape[2]))
     for sess in range(len(sessInd)-1):
@@ -67,7 +99,7 @@ def reshapeWeights(w, oldSessInd, newSessInd, standardGLMHMM=False):
     Parameters
     ----------
     w: T x k x d x c numpy array
-            true weight matrix. for c=2, trueW[:,:,:,1] = 0 
+        weight matrix. for c=2, trueW[:,:,:,1] = 0 
     oldSessInd: list of int
         old indices of each session start, together with last session end + 1
     newSessInd: list of int
@@ -76,6 +108,7 @@ def reshapeWeights(w, oldSessInd, newSessInd, standardGLMHMM=False):
     Returns
     -------
     reshapedW: newT x k x d x c
+        reshaped weight matrix
     '''
     T = w.shape[0]
     k = w.shape[1]
@@ -115,6 +148,7 @@ def reshapeTransitionMatrix(p, oldSessInd, newSessInd):
     Returns
     -------
     reshapedP: newT x k x k
+        reshaped transition matrix
     '''
     
     T = p.shape[0]
@@ -131,22 +165,25 @@ def reshapeTransitionMatrix(p, oldSessInd, newSessInd):
         
     return reshapedP
 
-def reshapeP_M1_to_M2(P, N):
-    '''
-    function reshaping transition matrix in dGLM-HMM1 of shape (K,K) to shape (N,K,K) in dGLM-HMM2
-    
-    '''
-    return np.repeat(P[np.newaxis,...], N, axis=0)
-
 def get_states_order(w, sessInd, stimCol=[1]):
     ''' 
     returning states in decreasing order according to absolute value of sensory weights across consecutive sessions
+
+    Parameters
+    -------
+    w: T x k x d x c numpy array
+        weight matrix. for c=2, trueW[:,:,:,1] = 0 
+    sessInd: list of int
+        old indices of each session start, together with last session end + 1
+    stimCol: list of int
+        index of stimulus column to be examined for ordering
 
     Returns
     -------
     sortedInd: list of length k
         permutation of [0,1,..,k-1] in order described above
     '''
+
     k = w.shape[1]
     D = w.shape[2]
     sess = len(sessInd)-1
@@ -162,7 +199,7 @@ def get_states_order(w, sessInd, stimCol=[1]):
 
 def softplus(x):
     '''   
-    Computes  f(x) = log (1 + exp(x))
+    Softplus function computes  f(x) = log (1 + exp(x))
 
     Used for calculating log of observatin probabilities as -f(-x) = - log (1 + exp(-x)) = log( 1 / (1 + exp(-x))) 
     and - f(x) = log( 1 / (1 + exp(x))) = log( exp(-x) / (1 + exp(-x)))
@@ -182,14 +219,21 @@ def softplus(x):
 
 def softplus_deriv(x):
     '''
-    derivative of softplus function
-    d/dx log (1 + exp(x)) = exp(x) / (1 + exp(x))
+    Derivative of softplus function
 
+    d/dx log (1 + exp(x)) = exp(x) / (1 + exp(x))
+    
     '''
 
-    # avoiding overflow
+    # avoiding overflow by separating in two different cases
     if (x > 0):
         return 1/(1+math.exp(-x))
     else:
         return math.exp(x)/(1+math.exp(x))
     
+def reshapeP_M1_to_M2(P, N):
+    '''
+    function reshaping transition matrix of shape (K,K) to shape (N,K,K) 
+    
+    '''
+    return np.repeat(P[np.newaxis,...], N, axis=0)
