@@ -1,0 +1,26 @@
+name: dglmhmm
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - numpy
+  - scipy
+  - pandas
+  - scikit-learn
+  - statsmodels
+  - matplotlib
+  - seaborn
+  - ipykernel
+  - jupyter
+  - pytz
+  - packaging
+  - threadpoolctl
+  - setuptools
+  - wheel
+  - tzdata
+  - psutil
+  - pip:
+      - "jax[cpu]"
+      - patsy
+      - autograd
