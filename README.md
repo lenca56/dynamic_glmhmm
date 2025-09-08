@@ -1,6 +1,6 @@
 # dynamic_glmhmm
 
-This package provides flexible and easy-to-use code for fitting Generalized Linear Models (GLMs), standard GLM-HMMs (also known as Input-Output HMMs or IO-HMMs), and **dynamic GLM-HMMs** (in which parameters are varying across sessions). The code currently allows fitting observations/output of Bernoulli distributions (binary choices), but can easily be adapted to fit observations/output with more than two classes. Inference is done using a variation of the Expectation Maximization (EM) algorithm. See bioRxiv paper for more information.
+This package provides flexible and easy-to-use code for fitting Generalized Linear Models (GLMs), standard GLM-HMMs (also known as Input-Output HMMs or IO-HMMs), and **dynamic GLM-HMMs** (in which parameters are varying across sessions). The code currently allows fitting observations/output of Bernoulli distributions (binary choices), but could easily be adapted to fit observations/output with more than two classes. Inference is done using a variation of the Expectation Maximization (EM) algorithm. See bioRxiv paper for more information.
 
 # Installation Instructions
 
@@ -11,6 +11,16 @@ git clone https://github.com/lenca56/dynamic_glmhmm.git
 For convenience, we recommend setting up a virtual environment before running the code, to avoid any unpleasant version control issues or interactions with other projects you're working on. See the env.yml file for configuration details. Note the package requires python 3.7 to run.
 
 # Demo
+
+**demo_data/dataset_two_state_simulated.npz**: demo dataset that contains the following arrays:
+- trueW: true weights used to simulate data
+- trueP: true transition matrix used to simulate data
+- sessInd: start indices for each session
+- trainX: simulated 2-dim inputs X (bias and stimulus) 
+- trainY: simulated choice output Y (binary choices)
+  
+**Demo_simulated_data.ipynb**: demo jupyter notebook to fit the demo dataset with dynamic GLM-HMM
+
 
 # Package Contents
 
