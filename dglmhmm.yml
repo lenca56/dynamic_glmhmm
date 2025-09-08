@@ -20,7 +20,3 @@ dependencies:
   - wheel
   - tzdata
   - psutil
-  - pip:
-      - "jax[cpu]"
-      - patsy
-      - autograd
