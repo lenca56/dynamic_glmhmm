@@ -2,6 +2,7 @@
 *.npy
 *.npz
 data/**
+!**/dataset_two_state_simulated.npz
 models/**
 data_simulated/**
 data_IBL/**
