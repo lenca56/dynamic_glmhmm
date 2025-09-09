@@ -20,7 +20,7 @@ def split_data(N, sessInd, folds=5, blocks=10, random_state=1):
 
     splits each session into consecutive blocks that randomly go into train and test => each session has trials in both train and test sets
 
-    ! Warning: each session must have at least (folds-1) * blocks  trials
+    ! Warning: each session must have at least (folds-1) * blocks trials
 
     Parameters
     ----------
@@ -70,12 +70,14 @@ def split_data(N, sessInd, folds=5, blocks=10, random_state=1):
 
     return presentTrain, presentTest
 
-def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigmaList=[0.01, 0.1, 1, 10, 100], maxiter=300, glmhmmW=None, glmhmmP=None, glmhmmpi=None, L2penaltyW=1, priorDirP = None, fit_init_states=False):
+def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigmaList=[0.01, 0.1, 1, 10, 100], maxiter=300, glmhmmW=None, glmhmmP=None, glmhmmpi=None, L2penaltyW=0, priorDirP = None, fit_init_states=False):
     ''' 
-    fitting function for multiple values of sigma (in increasing order) for "partial" model,
-    meaning that the weights are varying across sessions but the transition matrix is static
+    fitting function for the "partial" models (time-varying weights and static transition matrix), 
+    in increasing order of hyperparameter sigma that governs weight variability, where each models is initialized
+    with the best parameters obtained from the previously fit model with a slightly smaller sigma
 
     first sigma is 0 which gives the standard GLM-HMM fit
+
     each CV fold is fit individually
 
     Parameters
@@ -101,7 +103,7 @@ def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigma
     glmhmmP=None: K x K numpy array 
         given transition matrix from glm-hmm fit (default=None)
     L2penaltyW: int
-        positive value determinig strength of L2 penalty on weights when fitting (default=1)
+        positive value determinig strength of L2 penalty on weights when fitting (default=0)
     priorDirP : list of length 2
         first number is Dirichlet prior on diagonal, second number is the off-diagonal (default = [10,1])
     fit_init_states: Boolean (default=False)
@@ -171,8 +173,11 @@ def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigma
 
 def fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, alphaList=[0, 1, 10, 100, 1000, 10000], maxiter=200, partial_glmhmmW=None, globalP=None, partial_glmhmmpi=None, bestSigma=None, L2penaltyW=0, fit_init_states=False):
     ''' 
-    fitting function for multiple values of alpha (in increasing order) for "dynamic" model,
-    meaning that the weights and transition matrix are both varying across sessions 
+    fitting function for the "dynamic" models (time-varying weights and time-varying transition matrix), 
+    in decreasing order of hyperparameter alpha that governs transition matrix variability, where each models is initialized
+    with the best parameters obtained from the previously fit model with a slightly larger alpha
+
+    a very large alpha is equivalent to the parial GLM-HMM (static transition matrix)
 
     each CV fold is fit individually
 
@@ -190,18 +195,18 @@ def fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, alpha
         list of indices in the train set for a single fold
     presentTest: numpy vector
         list of indices in the test set for a single fold
-    alphaList: list of positive numbers, starting with 0 (default =[0, 0.01, 0.1, 1, 10, 100])
-        list of different hyperparameter alpha governing the rate of change of transition matrix
+    alphaList: list of positive numbers, starting with 0 (default = [0, 1, 10, 100, 1000, 10000])
+        list of different hyperparameters alpha governing the rate of change of transition matrix
     maxiter: int 
         maximum number of iterations before EM stopped (default=300)
     partial_glmhmmW: Nsize x K x D x C numpy array 
-        given weights from glm-hmm fit (default=None)
+        given weights from partial glm-hmm fit (default=None)
     globalP=None: K x K numpy array 
         fitted static transition matrix from standard/partial glm-hmm fit (default=None)
     bestSigma: float
-        value used for sigma, rate of change of weights across sessions, found by CV of "partial" model
+        value used for sigma, rate of change of weights across sessions, found by CV of "partial" model with above function
     L2penaltyW: int
-        positive value determinig strength of L2 penalty on weights when fitting (default=1)
+        positive value determinig strength of L2 penalty on weights when fitting (default=0)
     fit_init_states: Boolean (default=False)
         whether to fit or not distribution of first latent in every session
         if not, it's assumed uniform
@@ -272,7 +277,7 @@ def fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, alpha
 def fit_eval_CV_2Dsigmas(K, x, y, sessInd, presentTrain, presentTest, sigmaList=[0.01, 0.1, 1, 10, 100], maxiter=300, glmhmmW=None, glmhmmP=None, L2penaltyW=1, priorDirP = [10,1], stimCol=None, fit_init_states=False):
     ''' 
     fitting 2D sigma matrix (one for stimulus and one for all others)
-    initialized from best glm-hmm weights and sigmaList[0] =! 0
+    initialized from best glm-hmm weights
 
     Parameters
     ----------
@@ -376,91 +381,39 @@ def fit_eval_CV_2Dsigmas(K, x, y, sessInd, presentTrain, presentTest, sigmaList=
 
     return allP, allpi, allW, trainLl, testLl, testAccuracy
 
-def find_top_init_plot_loglikelihoods(ll, maxdiff, ax=None,startix=5, plot=True):
-    '''
-    Function from Iris' GLM-HMM github with some alterations
-    
-    Plot the trajectory of the log-likelihoods for multiple fits, identify how many top fits (nearly) match, and 
-    color those trajectories in the plot accordingly
-
-    Parameters
-    ----------
-
-    Returns
-    ----------
-
-    '''
-
-    # replacing the 0's by nan's
-    lls = np.copy(ll)
-    lls[lls==0] = np.nan
-
-    # get the final ll for each fit
-    final_lls = np.array([np.amax(lls[i,~np.isnan(lls[i,:])]) for i in range(lls.shape[0])])
-    
-    # get the index of the top ll
-    bestInd = np.argmax(final_lls)
-    
-    # compute the difference between the top ll and all final lls
-    ll_diffs = final_lls[bestInd] - final_lls
-    
-    # identify te fits where the difference from the top ll is less than maxdiff
-    top_matching_lls = lls[ll_diffs < maxdiff,:]
-    
-    # plot
-    if (plot == True):
-        ax.plot(np.arange(startix,lls.shape[1]),lls.T[startix:], color='black')
-        ax.plot(top_matching_lls.T[startix:], color='red')
-        ax.set_xlabel('iterations of EM', fontsize=16)
-        ax.set_ylabel('log-likelihood', fontsize=16)
-    
-    return bestInd, final_lls, np.where(ll_diffs < maxdiff)[0] # return indices of best (matching) fits
-
-def IBL_performance(dfAll, subject, plot=False):
-    data = dfAll[dfAll['subject']==subject]   # Restrict data to the subject specified
-
-    # keeping first 40 sessions
-    dateToKeep = np.unique(data['date'])
-    df = pd.DataFrame(data.loc[data['date'].isin(list(dateToKeep))])
-
-    contrastLeft=np.array(df['contrastLeft'])
-    contrastRight=np.array(df['contrastRight'])
-    correct=np.array(df['feedbackType'])
-    dates=np.array(df['date'])
-
-    easy_trials = (contrastLeft > 0.45).astype(int) | (contrastRight > 0.45).astype(int)
-    easy_perf = []
-    perf = []
-    length = []
-    for date in np.unique(dates):
-        d = df[df['date']==date]
-        for sess in np.unique(d['session']):
-            session_trials = (np.array(df['session']==sess) * np.array(df['date']==date)).astype(int)
-            inds = (session_trials * easy_trials).astype(bool)
-            easy_perf += [np.average(correct[inds])]
-            perf += [np.average(correct[session_trials.astype(bool)])]
-    
-    if (plot==True):
-        fig, axes = plt.subplots(1, figsize = (13,5), sharex=True, dpi=400) 
-        axes.plot(range(1,easy_perf.shape[0]+1), easy_perf, color="black", linewidth=3, label='easy trials') # only look at first 25 days
-        axes.plot(range(1,perf.shape[0]+1), perf, color="gray", linewidth=3, label='all trials')
-        axes.set_ylabel('task accuracy')
-        axes.set_xlabel('session')
-        axes.set_yticks([0.4,0.6,0.8,1.0])
-        axes.set_ylim(0.2,1.0)
-        axes.axhline(0.5, color="black", linestyle="--", lw=1, alpha=0.3, zorder=0)
-        axes.set_xlim(0,perf.shape[0]+2)
-        axes.spines[['right', 'top']].set_visible(False)
-        axes.legend()
-    return np.array(easy_perf), np.array(perf)
-
 def accuracy_states_sessions(gamma, phi, y, correctSide, sessInd):
     '''   
-    function that probabilistically computes accuracy for each state and overall (no hard assigning)
+    function that probabilistically computes accuracy for each state and overall accuracy
+    (no hard assigning of hidden states)
 
     P(y_t = correct choice | x_t) = sum over k of p(y_t=correct choice |x_t, z_t=k) * p(z_t=k)
 
+    Parameters
+    ----------
+    gamma: N x k numpy array
+        matrix of marginal posterior of latents given all observations p(z_t | y_1:T)
+        = likelihood of being in each state given the data
+    phi : N x k x c numppy array
+        matrix of observation probabilities
+    y : N x 1 numpy vector 
+        vector of observations with values 0,1,..,C-1
+    correctSide: T x 1 numpy vector
+        vector of correct side for each trial
+    sessInd: list of int
+        indices of each session start, together with last session end + 1
+
+    Returns
+    ----------
+    p_correct:  N x 1 numpy vector
+        probability of correct choice for each trial
+    p_correct_states: N x K numpy array
+        probability of correct choice for each trial given a state
+    p_correct_sessions: len(sessInd)-1 x 1 numpy vector
+        mean fraction correct choices for each session
+    p_correct_states_sessions: len(sessInd)-1 x K numpy array
+        mean fraction correct choices for each session given a state
     '''
+
     K = gamma.shape[1]
     N = y.shape[0]
     p_correct_states = np.zeros((N, K))
@@ -477,8 +430,25 @@ def accuracy_states_sessions(gamma, phi, y, correctSide, sessInd):
     
     return 100 * p_correct, 100 * p_correct_states, 100 * p_correct_sessions, 100 * p_correct_states_sessions
 
-
 def soft_occupancy_states_sessions(gamma, sessInd):
+    ''' 
+    function that probabilistically computes % occupancy in each state
+    (no hard assigning of hidden states)
+
+    Parameters
+    ----------
+    gamma: N x k numpy array
+        matrix of marginal posterior of latents given all observations p(z_t | y_1:T)
+        = likelihood of being in each state given the data
+    sessInd: list of int
+        indices of each session start, together with last session end + 1
+
+    Returns
+    ----------
+    p_occ_states_sessions: len(sessInd)-1 x K numpy array
+        = mean likelihood of trials spent in each state within a session
+    '''
+    
     K = gamma.shape[1]
     p_occ_states_sessions = np.zeros((len(sessInd)-1, K))
     for session in range(0, len(sessInd)-1):

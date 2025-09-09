@@ -439,149 +439,74 @@ def IBL_plot_performance(dfAll, subject, axes, sessStop=-1):
     axes[0].legend([l1, l2], ["% correct", "# trials"])
     plt.subplots_adjust(0,0,1,1) 
 
-# OLD FUNCTION
-# def sigma_CV_testLl_plot_PWM(rat_id, stage_filter, K, folds, sigmaList, axes, title='', labels=None, color=0, linestyle='solid', penaltyW=False, save_fig=False):
-#     ''' 
-#     function for plotting the test LL vs sigma scalars for PWM real data
-#     '''     
+def find_top_init_plot_loglikelihoods(ll, maxdiff, ax=None,startix=5, plot=True):
+    '''
+    Function from Iris' GLM-HMM github with some alterations
     
-#     colormap = sns.color_palette("viridis")
-#     sigmaListEven = [sigmaList[ind] for ind in range(len(sigmaList)) if ind%2==0]
-#     sigmaListOdd = [sigmaList[ind] for ind in range(11) if ind%2==1] + [sigmaList[ind] for ind in range(11,len(sigmaList))]
-#     for fold in range(0, folds):
-#         testLl = np.load(f'../data_PWM/testLl_PWM_{rat_id}_sf={stage_filter}_{K}_state_fold-{fold}_multiple_sigmas_penaltyW={penaltyW}.npy')
-#         axes.set_title(title)
-#         # axes.scatter(np.log(sigmaList[1:]), testLl[1:], color=colormap[color+fold])
-#         axes.plot(np.log(sigmaList[1:]), testLl[1:], '-o', color=colormap[color+fold], linestyle=linestyle, label=labels[fold])
-#         if(sigmaList[0]==0):
-#             axes.scatter(-2 + np.log(sigmaList[1]), testLl[0], color=colormap[color+fold])
-#             if (K==1):
-#                 axes.set_xticks([-2 + np.log(sigmaList[1])]+list(np.log(sigmaListOdd)),['GLM'] + [f'{np.round(sigma,4)}' for sigma in sigmaListOdd])
-#             else:
-#                 axes.set_xticks([-2 + np.log(sigmaList[1])]+list(np.log(sigmaListOdd)),['GLM-HMM'] + [f'{np.round(sigma,4)}' for sigma in sigmaListOdd])
-#         else:
-#             axes.scatter(np.log(sigmaList[0]), testLl[0], color=colormap[color+fold])
-#             axes.set_xticks([np.log(sigmaListEven)],[f'{np.round(sigma,4)}' for sigma in sigmaListEven])
-#         axes.set_ylabel("Test LL (per trial)")
-#         axes.set_xlabel("sigma")
-#     axes.legend()
+    Plot the trajectory of the log-likelihoods for multiple fits, identify how many top fits (nearly) match, and 
+    color those trajectories in the plot accordingly
 
-#     if(save_fig==True):
-#         plt.savefig(f'../figures/Sigma_vs_TestLl-{title}.png', bbox_inches='tight', dpi=400)
+    '''
 
+    # replacing the 0's by nan's
+    lls = np.copy(ll)
+    lls[lls==0] = np.nan
 
-# OLD FUNCTION
-# def sigma_testLl_plot(K, sigmaList, testLl, axes, title='', labels=None, color=0, save_fig=False):
-#     ''' 
-#     function for plotting the test LL vs sigma scalars
-#     '''
-#     inits = testLl.shape[0] # for mutiple initiaizations/models 
-#     colormap = sns.color_palette("viridis")
-#     sigmaListEven = [sigmaList[ind] for ind in range(len(sigmaList)) if ind%2==0]
-#     if (len(sigmaList)>=17):
-#         sigmaListOdd = [sigmaList[ind] for ind in range(len(sigmaList)-4) if ind%2==1] + [sigmaList[ind] for ind in range(17,len(sigmaList))]
-#     else:
-#         sigmaListOdd = [sigmaList[ind] for ind in range(len(sigmaList)) if ind%2==1]
-#     flag = 0
-#     if (labels is None):
-#         labels = ['' for init in range(0,inits)]
-#         flag = 1
-#     for init in range(0,inits):
-#         axes.set_title(title)
-#         axes.scatter(np.log(sigmaList[1:]), testLl[init,1:], color=colormap[color])
-#         axes.plot(np.log(sigmaList[1:]), testLl[init,1:], color=colormap[color])
-#         if(sigmaList[0]==0):
-#             axes.scatter(-1 + np.log(sigmaList[1]), testLl[init,0], color=colormap[color], label=labels[init])
-#             if (K==1):
-#                 axes.set_xticks([-1 + np.log(sigmaList[1])]+list(np.log(sigmaListOdd)),['GLM'] + [f'{np.round(sigma,3)}' for sigma in sigmaListOdd])
-#             else:
-#                 axes.set_xticks([-1 + np.log(sigmaList[1])]+list(np.log(sigmaListOdd)),['GLM-HMM'] + [f'{np.round(sigma,3)}' for sigma in sigmaListOdd])
-#         else:
-#             axes.scatter(np.log(sigmaList[0]), testLl[init,0], color=colormap[color], label=f'init {init}')
-#             axes.set_xticks([np.log(sigmaListEven)],[f'{np.round(sigma,2)}' for sigma in sigmaListEven])
-#     axes.set_ylabel("Test LL (per trial)")
-#     axes.set_xlabel("sigma")
-#     if (flag == 0):
-#         axes.legend()
-
-#     if(save_fig==True):
-#         plt.savefig(f'../figures/Sigma_vs_TestLl-{title}.png', bbox_inches='tight', dpi=400)
-
-# def plotting_weights_PWM(w, sessInd, axes, sessStop=None, yLim=[-3,3,-1,1], title='', save_fig=False):
-
-#     # permute weights accordinng to highest sensory
-#     sortedStateInd = get_states_order(w, sessInd)
-#     w = w[:,sortedStateInd,:,:]
-
-#     K = w.shape[1]
-#     sess = len(sessInd)-1
-
-#     if (K==1):
-#         axes[0].axhline(0, alpha=0.3, color='black',linestyle='--')
-#         axes[1].axhline(0, alpha=0.3, color='black',linestyle='--')
-#         if (sessStop==None):
-#             axes[1].plot(range(1,sess+1),w[sessInd[:-1],0,4,1],color='#59C3C3', linewidth=5, label='previous choice', alpha=0.8)
-#             axes[1].plot(range(1,sess+1),w[sessInd[:-1],0,5,1],color='#9593D9',linewidth=5, label='previous correct', alpha=0.8)
-#             axes[1].plot(range(1,sess+1),w[sessInd[:-1],0,3,1],color='#99CC66',linewidth=5, label='previous stim', alpha=0.8)
-#             axes[0].plot(range(1,sess+1),w[sessInd[:-1],0,1,1],color="#A9373B",linewidth=5,label='stim A', alpha=0.8)
-#             axes[0].plot(range(1,sess+1),w[sessInd[:-1],0,0,1],color='#FAA61A',linewidth=5, label='bias', alpha=0.8)
-#             axes[0].plot(range(1,sess+1),w[sessInd[:-1],0,2,1],color="#2369BD",linewidth=5, label='stim B', alpha=0.8)
-#         else:
-#             axes[1].plot(range(1,sessStop+1),w[sessInd[:sessStop],0,4,1],color='#59C3C3', linewidth=5, label='previous choice', alpha=0.8)
-#             axes[1].plot(range(1,sessStop+1),w[sessInd[:sessStop],0,5,1],color='#9593D9',linewidth=5, label='previous correct', alpha=0.8)
-#             axes[1].plot(range(1,sessStop+1),w[sessInd[:sessStop],0,3,1],color='#99CC66',linewidth=5, label='previous stim', alpha=0.8)
-#             axes[0].plot(range(1,sessStop+1),w[sessInd[:sessStop],0,1,1],color="#A9373B",linewidth=5,label='stim A', alpha=0.8)
-#             axes[0].plot(range(1,sessStop+1),w[sessInd[:sessStop],0,0,1],color='#FAA61A',linewidth=5, label='bias', alpha=0.8)
-#             axes[0].plot(range(1,sessStop+1),w[sessInd[:sessStop],0,2,1],color="#2369BD",linewidth=5, label='stim B', alpha=0.8)
-
-#         #axes[0].set_title(title)
-#         axes[0].set_ylabel("weights")
-#         axes[0].set_xlabel('session')
-#         # axes[0].set_yticks([-2,0,2])
-#         axes[0].set_ylim(yLim[0:2])
-#         axes[1].set_ylim(yLim[2:4])
-#         # axes[1].set_yticks([0,2])
-#         #axes[1].set_ylabel("weights")
-#         axes[1].set_xlabel('session')
-
-#         axes[0].legend()
-#         axes[1].legend()
-
-#     elif(K >= 2):
-#         for i in range(0,K):
-#             axes[i,0].axhline(0, alpha=0.3, color='black',linestyle='--')
-#             axes[i,1].axhline(0, alpha=0.3, color='black',linestyle='--')
-#             if (sessStop==None):
-#                 axes[i,1].plot(range(1,sess+1),w[sessInd[:-1],i,4,1],color='#59C3C3', linewidth=5, label='previous choice', alpha=0.8)
-#                 axes[i,1].plot(range(1,sess+1),w[sessInd[:-1],i,5,1],color='#9593D9',linewidth=5, label='previous correct', alpha=0.8)
-#                 axes[i,1].plot(range(1,sess+1),w[sessInd[:-1],i,3,1],color='#99CC66',linewidth=5, label='previous stim', alpha=0.8)
-#                 axes[i,0].plot(range(1,sess+1),w[sessInd[:-1],i,1,1],color="#A9373B",linewidth=5,label='stim A', alpha=0.8)
-#                 axes[i,0].plot(range(1,sess+1),w[sessInd[:-1],i,0,1],color='#FAA61A',linewidth=5, label='bias', alpha=0.8)
-#                 axes[i,0].plot(range(1,sess+1),w[sessInd[:-1],i,2,1],color="#2369BD",linewidth=5, label='stim B', alpha=0.8)
-#             else:
-#                 axes[i,1].plot(range(1,sessStop+1),w[sessInd[:sessStop],i,4,1],color='#59C3C3', linewidth=5, label='previous choice', alpha=0.8)
-#                 axes[i,1].plot(range(1,sessStop+1),w[sessInd[:sessStop],i,5,1],color='#9593D9',linewidth=5, label='previous correct', alpha=0.8)
-#                 axes[i,1].plot(range(1,sessStop+1),w[sessInd[:sessStop],i,3,1],color='#99CC66',linewidth=5, label='previous stim', alpha=0.8)
-#                 axes[i,0].plot(range(1,sessStop+1),w[sessInd[:sessStop],i,1,1],color="#A9373B",linewidth=5,label='stim A', alpha=0.8)
-#                 axes[i,0].plot(range(1,sessStop+1),w[sessInd[:sessStop],i,0,1],color='#FAA61A',linewidth=5, label='bias', alpha=0.8)
-#                 axes[i,0].plot(range(1,sessStop+1),w[sessInd[:sessStop],i,2,1],color="#2369BD",linewidth=5, label='stim B', alpha=0.8)
-
-#             axes[i,0].set_title(f'State {i+1}')
-#             axes[i,1].set_title(f'State {i+1}')
-#             axes[i,0].set_ylabel("weights")
-#             axes[i,0].set_ylim(yLim[0:2])
-#             axes[i,1].set_ylim(yLim[2:4])
-#             # axes[i,0].set_yticks([-2,0,2])
-#             # axes[i,0].set_ylim(-3,3)
-#             # axes[i,1].set_ylim(-0.2,2.1)
-#             # axes[i,1].set_yticks([0,2])
-#             #axes[1].set_ylabel("weights")
-#             if (i==K-1):
-#                 axes[i,0].set_xlabel('session')
-#                 axes[i,1].set_xlabel('session')
-#             axes[i,0].legend(loc='upper right')
-#             axes[i,1].legend(loc='upper right')
-
-#     if(save_fig==True):
-#         plt.savefig(f'../figures/Weights_PWM_{title}.png', bbox_inches='tight', dpi=400)
+    # get the final ll for each fit
+    final_lls = np.array([np.amax(lls[i,~np.isnan(lls[i,:])]) for i in range(lls.shape[0])])
     
+    # get the index of the top ll
+    bestInd = np.argmax(final_lls)
+    
+    # compute the difference between the top ll and all final lls
+    ll_diffs = final_lls[bestInd] - final_lls
+    
+    # identify te fits where the difference from the top ll is less than maxdiff
+    top_matching_lls = lls[ll_diffs < maxdiff,:]
+    
+    # plot
+    if (plot == True):
+        ax.plot(np.arange(startix,lls.shape[1]),lls.T[startix:], color='black')
+        ax.plot(top_matching_lls.T[startix:], color='red')
+        ax.set_xlabel('iterations of EM', fontsize=16)
+        ax.set_ylabel('log-likelihood', fontsize=16)
+    
+    return bestInd, final_lls, np.where(ll_diffs < maxdiff)[0] # return indices of best (matching) fits
+
+def IBL_performance(dfAll, subject, plot=False):
+    data = dfAll[dfAll['subject']==subject]   # Restrict data to the subject specified
+
+    # keeping first 40 sessions
+    dateToKeep = np.unique(data['date'])
+    df = pd.DataFrame(data.loc[data['date'].isin(list(dateToKeep))])
+
+    contrastLeft=np.array(df['contrastLeft'])
+    contrastRight=np.array(df['contrastRight'])
+    correct=np.array(df['feedbackType'])
+    dates=np.array(df['date'])
+
+    easy_trials = (contrastLeft > 0.45).astype(int) | (contrastRight > 0.45).astype(int)
+    easy_perf = []
+    perf = []
+    length = []
+    for date in np.unique(dates):
+        d = df[df['date']==date]
+        for sess in np.unique(d['session']):
+            session_trials = (np.array(df['session']==sess) * np.array(df['date']==date)).astype(int)
+            inds = (session_trials * easy_trials).astype(bool)
+            easy_perf += [np.average(correct[inds])]
+            perf += [np.average(correct[session_trials.astype(bool)])]
+    
+    if (plot==True):
+        fig, axes = plt.subplots(1, figsize = (13,5), sharex=True, dpi=400) 
+        axes.plot(range(1,easy_perf.shape[0]+1), easy_perf, color="black", linewidth=3, label='easy trials') # only look at first 25 days
+        axes.plot(range(1,perf.shape[0]+1), perf, color="gray", linewidth=3, label='all trials')
+        axes.set_ylabel('task accuracy')
+        axes.set_xlabel('session')
+        axes.set_yticks([0.4,0.6,0.8,1.0])
+        axes.set_ylim(0.2,1.0)
+        axes.axhline(0.5, color="black", linestyle="--", lw=1, alpha=0.3, zorder=0)
+        axes.set_xlim(0,perf.shape[0]+2)
+        axes.spines[['right', 'top']].set_visible(False)
+        axes.legend()
+    return np.array(easy_perf), np.array(perf)

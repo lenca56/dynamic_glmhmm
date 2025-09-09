@@ -16,13 +16,14 @@ class dynamic_GLMHMM():
 
     Notation: 
         N: number of total data points
-        T: number of data points considered
+        T: arbitrary number of data points 
         K: number of states (states)
         D: number of features (inputs to design matrix)
         C: number of classes (possible observations/choices)
-        x: design matrix (n x d)
-        y: observations (n x c) or (n x 1)
-        w: GLM weights mapping x to y (n x k x d x c)
+        x: design matrix (N x D)
+        y: observations (N x X) or (N x 1)
+        w: GLM weights mapping x to y (N x K x D x C)
+
         model_type: str
             if 'standard': weights and transition matrix are constant across sessions
             if 'partial': transition matrix is constant across sesssions but weights vary across sessions
@@ -35,7 +36,7 @@ class dynamic_GLMHMM():
     def log_observation_probability(self, x, w):
         '''
         Calculating logarithm of observation probabilities = log p(y | x, w) 
-        for part/all of design matrix x and weight matrix w
+        for part or all of the design matrix x and weight matrix w
 
         Parameters
         ----------
@@ -156,7 +157,7 @@ class dynamic_GLMHMM():
         '''
         forward pass in forward-backward algorithm in E-step (from Expectation-Maximization algorithm)
         that can omit "missing" data which is used for testing
-       
+
         Parameters
         ----------
         y : T x 1 numpy vector 
@@ -238,7 +239,8 @@ class dynamic_GLMHMM():
 
         T = y.shape[0]
         
-        beta = np.zeros((T, self.K)).astype(float) # backward conditional probabilities p(y_t+1:T | z_t) / p(y_t+1:T | y_1:t)
+        # backward conditional probabilities p(y_t+1:T | z_t) / p(y_t+1:T | y_1:t)
+        beta = np.zeros((T, self.K)).astype(float) 
 
         # last time point
         beta[-1] = 1 # p(z_T=1)
@@ -263,7 +265,7 @@ class dynamic_GLMHMM():
     def posteriorLatents_EM(self, y, present, p, phi, alpha, beta, ct, startSessInd=[0]):
         ''' 
         calculates marginal posterior of latents gamma(z_t) = p(z_t | y_1:T), 
-        in other words, the likelihood of being in each state given the data: gamma(z_t)
+        in other words, the likelihood of being in each state given the data,
         and joint posterior of successive latent states zeta(z_t, z_t+1) = p(z_t, z_t+1 | y_1:T)
 
         Parameters
@@ -320,7 +322,7 @@ class dynamic_GLMHMM():
     def generate_param(self, sessInd, transitionDistribution=['dirichlet', (5, 1)], weightDistribution=['uniform', (-2,2)], model_type='standard'):
         ''' 
         Function that generates random parameters w and P 
-        and is used for initialization of parameters during fitting
+        and can be used for initialization of parameters during fitting
 
         Parameters
         ----------
@@ -400,13 +402,13 @@ class dynamic_GLMHMM():
     
     def value_weight_loss_function(self, currentW, x, y, present, gamma, prevW, nextW, sigma, model_type = 'standard', L2penaltyW=0):
         ''' 
-        weight loss function to optimize the weights in M-step of fitting function is calculated as negative of weighted log likelihood + prior terms 
-        coming from drifting wrt neighboring sessions 
-
-        optimizes weights for one state
+        weight loss function to optimize the weights in M-step by minimizing
+        negative of weighted log likelihood + prior terms coming from drifting wrt neighboring sessions 
 
         L(currentW from state k) = sum_t gamma(z_t=k) * log p(y_t | z_t=k) + log P(currentW | prevW) + log P(currentW | nextW),
-        where gamma matrix are fixed by old parameters but observation probabilities p(y_t | z_t=k) are updated with currentW
+        where gamma matrix is fixed by old parameters but observation probabilities p(y_t | z_t=k) are updated with currentW
+
+        optimizes weights for one state only
 
         Parameters
         ----------
@@ -434,7 +436,7 @@ class dynamic_GLMHMM():
         Returns
         ----------
         -lf: float
-            loss function for currentW to be minimized
+            loss function for currentW 
         '''
 
         # number of datapoints
@@ -481,16 +483,9 @@ class dynamic_GLMHMM():
 
     def grad_weight_loss_function(self, currentW, x, y, present, gamma, prevW, nextW, sigma, model_type='standard', L2penaltyW=0):
         ''' 
-        gradient of weight loss function to optimize the weights in M-step of fitting function is calculated as negative of weighted log likelihood + prior terms 
-        coming from drifting wrt neighboring sessions
+        gradient of weight loss function to optimize the weights in M-step (see above)
 
-        returns the gradient of the above function to be used for faster optimization 
-
-        optimizes weights for one state 
-
-        L(currentW from state k) = sum_t gamma(z_t=k) * log p(y_t | z_t=k) + log P(currentW | prevW) + log P(currentW | nextW),
-        where gamma matrix are fixed by old parameters but observation probabilities p(y_t | z_t=k) are updated with currentW
-
+        returns the gradient of the above function and is used for faster optimization
 
         Parameters
         ----------
@@ -517,8 +512,8 @@ class dynamic_GLMHMM():
         
         Returns
         ----------
-        -lf: float
-            loss function for currentW to be minimized
+        -grad: float
+            gradient of loss function for currentW 
         '''
 
         # number of datapoints
@@ -561,10 +556,11 @@ class dynamic_GLMHMM():
     
     def fit(self, x, y, present, initP, initpi, initW, sigma=0, alpha=0, A=None, sessInd=None, maxIter=250, tol=1e-3, model_type='standard',  L2penaltyW=0, priorDirP = [10,1], fit_init_states=False):
         '''
-        Fitting function based on EM algorithm. Algorithm: observation probabilities are calculated with old weights for all sessions, then 
-        forward and backward passes are done for each session, weights are optimized for one particular session (phi stays the same),
-        then after all weights are optimized (in consecutive increasing order), the transition matrix is updated with the old zetas that
-        were calculated before weights were optimized
+        Fitting function based on EM algorithm. Algorithm: observation probabilities phi are calculated with previous parameters for all sessions, then 
+        forward and backward passes are done for each session to obtain gamma and zeta, then weights are optimized for one particular session at a time using gamma and zeta,
+        then after all weights are optimized (in consecutive increasing order of session), and lastly the transition matrix is updated based on zeta
+
+        See Methods of bioRxiv paper for more information.
 
         Parameters
         ----------
@@ -576,25 +572,29 @@ class dynamic_GLMHMM():
             0 means missing data and 1 means present
         initP :k x k numpy array
             initial matrix of transition probabilities
+        initpi: k x 1 numpy vector
+            initial k x 1 vector of state probabilities for t=1.
         initW: n x k x d x c numpy array
             initial weight matrix
         sigma: k x d numpy array
-            st dev of normal distr for weights drifting over sessions
+            hyperparameter governing the variability of the weights across sessions
             if one is 0, then all are 0 (=standard GLM-HMM)
+        alpha: float
+            hyperparameter governing the variability of the transition matrix across sessions
         sessInd: list of int
             indices of each session start, together with last session end + 1
-        pi0 : k x 1 numpy vector
-            initial k x 1 vector of state probabilities for t=1.
         maxIter : int
             The maximum number of iterations of EM to allow. The default is 300.
         tol : float
             The tolerance value for the loglikelihood to allow early stopping of EM. The default is 1e-3.
-        priorDirP: list of length 2
-            diagonal and off diagonal terms for Dirichlet prior (+1) on transition matrix 
         model_type: str
             if 'standard': weights and transition matrix are constant across sessions
             if 'partial': transition matrix constant across sesssions but weights vary across sessions
             if 'dynamic': both weights and transition matrix vary across sessions
+        L2penaltyW: float
+            strength of L2 penatly term on weights (default=0)
+        priorDirP: list of length 2
+            diagonal and off diagonal terms for Dirichlet prior (+1) on transition matrix 
         fit_init_states: Boolean (default=False)
             whether to fit or not distribution of first latent in every session
             if not, it's assumed uniform
@@ -605,7 +605,7 @@ class dynamic_GLMHMM():
             fitted probability transition matrix
         w: T x k x d x c numpy array
             fitteed weight matrix
-        p : K numpy vector
+        pi: K numpy vector
             fixed / fitted distribution of first latent state in every session 
         ll: float
             marginal log-likelihood of the data p(y)
@@ -699,7 +699,8 @@ class dynamic_GLMHMM():
 
     def evaluate(self, x, y, sessInd, presentTest, p, pi, w):
         ''' 
-        function that computes per session test log-likelihood and test accuracy for the test set
+        function that computes per session test log-likelihood and test accuracy 
+        (only using the test set data)
 
         Parameters
         ----------
@@ -724,7 +725,8 @@ class dynamic_GLMHMM():
             average test log-likelihood per trial on the computed for each session separately 
         llTest: float
             average test log-likelihood per trial for all sessions
-        accuracyTest:
+        accuracyTest: float
+            percentage of correct predictions of actual observed choices y (by hard assigning choice in model)
         '''
 
         N = x.shape[0]
@@ -762,8 +764,7 @@ class dynamic_GLMHMM():
 
     def posterior_likelihood_of_each_state(self, p, pi, w, x, y, present, sessInd, sortedStateInd=None):
         ''' 
-
-        function that gives likelihood of being in each hidden state given the data and model parameters
+        function that gives posterior likelihood of being in each hidden state given the data and model parameters
 
         Parameters
         ----------
