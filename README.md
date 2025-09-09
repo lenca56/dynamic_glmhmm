@@ -45,11 +45,11 @@ The demo jupyter notebook demonstrates the same fitting procedure used for the e
 
 # Instructions for use
 
-We recommend following a similar fitting procedure as used below on IBL dataset. More information can be found in Methods section of our bioRxiv paper.
+We recommend following a similar fitting procedure as used below on IBL dataset. More information can be found in Methods section of our bioRxiv paper (https://www.biorxiv.org/content/10.1101/2024.11.30.626182v1.abstract).
 
 # Results on IBL dataset
 
-To reproduce results, run in this order the following python scripts (running multiple models in parallel with slurm scripts, preferrably on a cluster):
+To reproduce results from our paper, run in this order the following python scripts (running multiple models in parallel with slurm scripts, preferrably on a cluster):
 
 **`fit_cluster_GLM_all.py`** & **`job_GLM.slurm`**: a python script and slurm job for fitting a GLM (one state only) for IBL mice together, trying out models with different values 'pTanh', the parameter of tanh transformation of the stimulus contrast values
 
@@ -59,7 +59,7 @@ To reproduce results, run in this order the following python scripts (running mu
 
 **`fit_cluster_dynamicGLMHMM_all.py`** & **`job_dynamicGLMHMM.slurm`**: a python script and slurm job for fitting a dynamic GLM-HMM for each IBL mouse individually, trying out models with different values of alpha, the hyperparameter governing the variability of the transition matrix between consecutive sessions
 
-To reproduce figures from our paper (https://www.biorxiv.org/content/10.1101/2024.11.30.626182v1.abstract), run the following jupyter notebooks:
+To reproduce figures from our paper, run the following jupyter notebooks:
 
 **`Figure1.ipynb`**: Hypothetical learning trajectory under 2-state dynamic GLM-HMM
 
