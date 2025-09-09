@@ -10,7 +10,7 @@ For installation (it only takes a few minutes), download the code using the link
 git clone https://github.com/lenca56/dynamic_glmhmm.git
 ```
 
-Before running the code, we recommend setting up a virtual environment using Anaconda (https://www.anaconda.com/download). The `dglmhmm.yml` file contains all necessary packages for the environment. Note that the we used the 3.10 version of python. The exact versions of all the packages used are found in `dglmhmm_exact.yml`.
+Before running the code, we recommend setting up a virtual environment using Anaconda (https://www.anaconda.com/download). The `dglmhmm.yml` file contains all necessary packages for the environment that should be used. Note that the we used the 3.10 version of python. The exact versions of all the packages used are found in `dglmhmm_exact.yml`.
 
 We have successfully tested the code on both Mac OS (Sonoma 14.2) and Linux (Springdale 8) and expect it to work on all standard operating systems.
 
@@ -31,41 +31,47 @@ The demo jupyter notebook demonstrates the same fitting procedure used for the e
 
 **`dglmhmm.yml`**: enivornment with all necessary packages
 
-**dglmhmm_exact.yml**: exact enivornment we used for IBL results
+**`dglmhmm_exact.yml`**: exact enivornment we used for IBL results
 
-**dynamic_glmhmm.py**: contains class code for fitting standard, partial, or dynamic GLM-HMM
+**`dynamic_glmhmm.py`**: contains class code for fitting standard, partial, or dynamic GLM-HMM
 
-**analysis_utils.py**: contains functions for fitting via cross-validation to find optimal hyperparameters and for computing accuracy and occupancy in each state
+**`analysis_utils.py`**: contains functions for fitting via cross-validation to find optimal hyperparameters and for computing accuracy and occupancy in each state
 
-**plotting_utils.py**: contains plotting functions
+**`plotting_utils.py`**: contains plotting functions
 
-**utils.py**: contains miscellaneous helper functions
+**`io_utils.py`**: contains IBL data handling functions
+
+**`utils.py`**: contains miscellaneous helper functions
+
+# Instructions for use
+
+We recommend following a similar fitting procedure as used below on IBL dataset. More information can be found in Methods section of bioRxiv paper.
 
 # Results on IBL dataset
 
 To reproduce results, run in this order the following python scripts (running multiple models in parallel with slurm script on cluster):
 
-**fit_cluster_GLM_all.py** & **job_GLM.slurm**: a script and slurm job for fitting a GLM (one state only) for IBL mice together, trying out models with different values 'pTanh', the parameter of tanh transformation of the stimulus contrast values
+**`fit_cluster_GLM_all.py`** & **`job_GLM.slurm`**: a script and slurm job for fitting a GLM (one state only) for IBL mice together, trying out models with different values 'pTanh', the parameter of tanh transformation of the stimulus contrast values
 
-**fit_cluster_standardGLMHMM_all.py** & **job_standardGLMHMM.slurm**: a script and slurm job for fitting a standard GLM-HMM for IBL mice together, trying out models with different numbers of states in the HMM and different random initializations
+**`fit_cluster_standardGLMHMM_all.py`** & **`job_standardGLMHMM.slurm`**: a script and slurm job for fitting a standard GLM-HMM for IBL mice together, trying out models with different numbers of states in the HMM and different random initializations
 
-**fit_cluster_partialGLMHMM.py** & **job_partialGLMHMM.slurm**: a script and slurm job for fitting a standard GLM-HMM for each IBL mouse individually, trying out models with different values of sigma, the hyperparameter governing the variability of the weights between consecutive sessions
+**`fit_cluster_partialGLMHMM.py`** & **`job_partialGLMHMM.slurm`**: a script and slurm job for fitting a standard GLM-HMM for each IBL mouse individually, trying out models with different values of sigma, the hyperparameter governing the variability of the weights between consecutive sessions
 
-**fit_cluster_dynamicGLMHMM_all.py** & **job_dynamicGLMHMM.slurm**: a script and slurm job for fitting a standard GLM-HMM for each IBL mouse individually, trying out models with different values of alpha, the hyperparameter governing the variability of the transition matrix between consecutive sessions
+**`fit_cluster_dynamicGLMHMM_all.py`** & **`job_dynamicGLMHMM.slurm`**: a script and slurm job for fitting a standard GLM-HMM for each IBL mouse individually, trying out models with different values of alpha, the hyperparameter governing the variability of the transition matrix between consecutive sessions
 
 To reproduce figures from our paper (https://www.biorxiv.org/content/10.1101/2024.11.30.626182v1.abstract), run the following jupyter notebooks:
 
-**Figure1.ipynb**
+**`Figure1.ipynb`**: Hypothetical learning trajectory under 2-state dynamic GLM-HMM
 
-**Figure2-3.ipynb**
+**`Figure2-3.ipynb`**: Fitted dynamic GLM-HMM results on example IBL mouse during training
 
-**Figure4-5.ipynb**
+**`Figure4-5.ipynb`**: Fitted dynamic GLM-HMM results on all 32 IBL mice analyzed during training
 
-**Figure6.ipynb**
+**`Figure6.ipynb`**: Post-training IBL mice results
 
-**Simulations.ipynb**
+**`Supplemental_Figure2.ipynb`**: Dynamic GLM-HMM on simulated data flexibly uses different number of state
 
-**Supplemental_Figure3.ipynb**
+**`Supplemental_Figure3.ipynb`**: Dynamic 3-state GLM-HMM performance comparison to other models.
 
 
 
