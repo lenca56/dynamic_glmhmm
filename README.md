@@ -10,18 +10,18 @@ For installation (it only takes a few minutes), download the code using the link
 git clone https://github.com/lenca56/dynamic_glmhmm.git
 ```
 
-Before running the code, we recommend setting up a virtual environment using Anaconda (add link). The "dglmhmm.yml" file contains all necessary packages for the environment. Note that the we used the 3.10 version of python. The exact versions of all the packages used are found in "dglmhmm_exact.yml".
+Before running the code, we recommend setting up a virtual environment using Anaconda (https://www.anaconda.com/download). The `dglmhmm.yml` file contains all necessary packages for the environment. Note that the we used the 3.10 version of python. The exact versions of all the packages used are found in `dglmhmm_exact.yml`.
 
 We have successfully tested the code on both Mac OS (Sonoma 14.2) and Linux (Springdale 8) and expect it to work on all standard operating systems.
 
 # Demo
 
 **data_demo/dataset_two_state_simulated.npz**: demo dataset that contains the following arrays:
-- 'trueW': true weights used to simulate data
-- 'trueP': true transition matrix used to simulate data
-- 'sessInd': start indices for each session
-- 'trainX': simulated 2-dim inputs X (bias and stimulus) 
-- 'trainY': simulated choice output Y (binary choices)
+- `trueW`: true weights used to simulate data
+- `trueP`: true transition matrix used to simulate data
+- `sessInd`: start indices for each session
+- `trainX`: simulated 2-dim inputs X (bias and stimulus) 
+- `trainY`: simulated choice output Y (binary choices)
   
 **Demo_simulated_data.ipynb**: demo jupyter notebook with instructions to fit the demo dataset using the dynamic GLM-HMM
 
@@ -29,7 +29,7 @@ The demo jupyter notebook demonstrates the same fitting procedure used for the e
 
 # Package Contents
 
-**dglmhmm.yml**: enivornment with all necessary packages
+**`dglmhmm.yml`**: enivornment with all necessary packages
 
 **dglmhmm_exact.yml**: exact enivornment we used for IBL results
 
