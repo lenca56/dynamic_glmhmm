@@ -1,0 +1,18 @@
+{
+ "date_created": "2024-09-16 10:50",
+ "origin": "public",
+ "min_api_version": "2.7",
+ "database_tags": [
+  "2021_Q1_IBL_et_al_Behaviour"
+ ],
+ "tables": {
+  "sessions": {
+   "nrecs": 6488,
+   "size": 4425
+  },
+  "datasets": {
+   "nrecs": 14366,
+   "size": 6475
+  }
+ }
+}

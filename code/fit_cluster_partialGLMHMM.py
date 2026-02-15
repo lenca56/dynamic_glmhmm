@@ -66,7 +66,7 @@ priorDirP = [10,1]
 maxiter = 300
 fit_init_states = False
 
-# initialize model from best fitting parameters of standard GLM-HMM
+# initialize model from best fitting parameters of standard GLM-HMM on all animals 
 dataInit = np.load(f'../data_IBL/all_animals/Best_allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_signedStimulus={signedStimulus}.npz')
 glmhmmP = dataInit['P']
 glmhmmpi = dataInit['pi']

@@ -32,6 +32,7 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
 
     # getting correct answer for each trial
     correctSide = np.array(dataTemp['correctSide'])
+    responseTimes =  np.array(dataTemp['RT'])
     
     # tanh transformation
     if pTanh is not None:
@@ -45,36 +46,99 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
     if signedStimulus == True:
         D = 4
         x = np.zeros((dataTemp.shape[0], D)) 
-        y = np.array(dataTemp['choice'])
+        y = np.array(dataTemp['choice']).astype(int)
 
         x[:,0] = 1 # bias or offset is first column
         x[:,1] = cR - cL # 'stimulus contrast'
         x[:,1] = x[:,1] / np.std(x[:,1]) # z-scored   # note that mean should be around 0
         x[1:,2] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's
-        x[1:,3] = 2 * np.array(dataTemp['correctSide'])[0:-1] - 1 # previous reward as in Zoe's
+        x[1:,3] = 2 * np.array(dataTemp['correctSide'])[0:-1].astype(int) - 1 # previous reward as in Zoe's
     else:
         D = 5
         x = np.zeros((dataTemp.shape[0], D)) 
-        y = np.array(dataTemp['choice'])
+        y = np.array(dataTemp['choice']).astype(int)
 
         x[:,0] = 1 # bias or offset is first column
         x[:,1] = cR # contrast right transformed 
         x[:,2] = cL # contrast left transformed
         # not taking into account first and last of each session 
         x[1:,3] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's {-1,1}
-        x[1:,4] = 2 * np.array(dataTemp['correctSide'])[0:-1] - 1 # previous reward as in Zoe's {-1,1}
+        x[1:,4] = 2 * np.array(dataTemp['correctSide'])[0:-1].astype(int) - 1 # previous reward as in Zoe's {-1,1}
         
     # session start indices
     sessInd = [0]
     for date in dateToKeep :
         d = dataTemp[dataTemp['date']==date]
-        for sess in np.unique(d['session']):
+        for sess in np.unique(d['session'].astype(int)):
             dTemp = d[d['session'] == sess] 
             dLength = len(dTemp.index.tolist())
             sessInd.append(sessInd[-1] + dLength)
     
-    return x, y, sessInd, correctSide
+    return x, y, sessInd, correctSide, responseTimes
 
+def get_mouse_design_new_batch(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=None):
+    ''' 
+    function to process IBL data and form design matrix x and output vector y for a given subject 
+
+    p_tanh = 5 used by Roy et al., 2021
+    '''
+    data = dfAll[dfAll['subject']==subject]   # Restrict data to the subject specified
+
+    # sessions to keep
+    if sessStop is not None:
+        dateToKeep = np.unique(data['date'])[0:sessStop]
+    else: 
+        dateToKeep = np.unique(data['date'])
+    dataTemp = pd.DataFrame(data.loc[data['date'].isin(list(dateToKeep))])
+
+    dataTemp.loc[dataTemp['contrastLeft'].isna(),'contrastLeft'] = 0 
+    dataTemp.loc[dataTemp['contrastRight'].isna(), 'contrastRight'] = 0 
+
+    # getting correct answer for each trial
+    correctSide = np.array(dataTemp['feedbackType'])
+    responseTimes =  np.array(dataTemp['RT'])
+    
+    # tanh transformation
+    if pTanh is not None:
+        cL = np.tanh(pTanh * dataTemp['contrastLeft']) / np.tanh(pTanh) # tanh transformation of left contrasts
+        cR = np.tanh(pTanh * dataTemp['contrastRight']) / np.tanh(pTanh) # tanh transformation of right contrasts
+    else:
+        cL = dataTemp['contrastLeft']
+        cR = dataTemp['contrastRight']
+
+    # creating inputs and ouput arrays
+    if signedStimulus == True:
+        D = 4
+        x = np.zeros((dataTemp.shape[0], D)) 
+        y = np.array(dataTemp['choice']).astype(int)
+
+        x[:,0] = 1 # bias or offset is first column
+        x[:,1] = cR - cL # 'stimulus contrast'
+        x[:,1] = x[:,1] / np.std(x[:,1]) # z-scored   # note that mean should be around 0
+        x[1:,2] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's
+        x[1:,3] = 2 * np.array(dataTemp['feedbackType'])[0:-1].astype(int) - 1 # previous reward as in Zoe's
+    else:
+        D = 5
+        x = np.zeros((dataTemp.shape[0], D)) 
+        y = np.array(dataTemp['choice']).astype(int)
+
+        x[:,0] = 1 # bias or offset is first column
+        x[:,1] = cR # contrast right transformed 
+        x[:,2] = cL # contrast left transformed
+        # not taking into account first and last of each session 
+        x[1:,3] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's {-1,1}
+        x[1:,4] = 2 * np.array(dataTemp['feedbackType'])[0:-1].astype(int) - 1 # previous reward as in Zoe's {-1,1}
+        
+    # session start indices
+    sessInd = [0]
+    for date in dateToKeep :
+        d = dataTemp[dataTemp['date']==date]
+        for sess in np.unique(d['session'].astype(int)):
+            dTemp = d[d['session'] == sess] 
+            dLength = len(dTemp.index.tolist())
+            sessInd.append(sessInd[-1] + dLength)
+    
+    return x, y, sessInd, correctSide, responseTimes
 
 def get_design_biased_blocks(dfAll, subject, sessInd, sessStop=None):
     ''' 
