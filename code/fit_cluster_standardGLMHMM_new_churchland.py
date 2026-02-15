@@ -48,7 +48,7 @@ x, y, sessInd, correctSide, responseTimes = get_mouse_design_new_batch(dfAll, su
 N = x.shape[0]
 D = x.shape[1]
 C = 2
-maxiter = 250
+maxiter = 300
 
 model_type = 'standard' # fitting standard GLM-HMM
 

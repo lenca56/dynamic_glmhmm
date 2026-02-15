@@ -636,8 +636,8 @@ class dynamic_GLMHMM():
             raise Exception("Should not fit init states when less than 20 sessions due to high uncertainty")
 
         for iter in range(maxIter):
-            # if (iter%100==0):
-            #     print(iter)
+            if (iter%100==0):
+                print(iter)
                 
             # calculate observation probabilities given parameters from previous iteration
             phi = self.observation_probability(x, w)
