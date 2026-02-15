@@ -35,7 +35,7 @@ for K in [3]:
                 z += 1
 
 # read from cluster array in order to get parallelizations
-idx = 0 #int(os.environ["SLURM_ARRAY_TASK_ID"])
+idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
 subject_idx = df.loc[idx,'subject_idx'].astype(int)
 K = df.loc[idx,'K']
 pTanh = df.loc[idx, 'pTanh']
@@ -48,7 +48,7 @@ x, y, sessInd, correctSide, responseTimes = get_mouse_design_new_batch(dfAll, su
 N = x.shape[0]
 D = x.shape[1]
 C = 2
-maxiter = 5 #250
+maxiter = 250
 
 model_type = 'standard' # fitting standard GLM-HMM
 
