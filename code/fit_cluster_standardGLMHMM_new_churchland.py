@@ -56,7 +56,7 @@ model_type = 'standard' # fitting standard GLM-HMM
 dataInit = np.load(f'../data_IBL/all_animals/Best_allAnimals_standardGLMHMM_{K}-state_pTanh={pTanh}_signedStimulus={signedStimulus}.npz')
 
 initP = np.zeros((N, K, K))
-initpi = np.zeros((K))
+initpi = np.ones((K)) / K
 initW = np.zeros((N, K, D, C)) 
 
 initP[:] = dataInit['P'][0]

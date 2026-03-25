@@ -636,8 +636,8 @@ class dynamic_GLMHMM():
             raise Exception("Should not fit init states when less than 20 sessions due to high uncertainty")
 
         for iter in range(maxIter):
-            # if (iter%100==0):
-            print(iter)
+            if (iter%50==0):
+                print(iter)
                 
             # calculate observation probabilities given parameters from previous iteration
             phi = self.observation_probability(x, w)
@@ -650,7 +650,7 @@ class dynamic_GLMHMM():
             # M-step for each session
             for s in range(0,sess):
 
-                if model_type in ['partial','dynamic']: # models with weights varying across sessions
+                if model_type in ['partial','dynamic','dynamic-different-prior']: # models with weights varying across sessions
 
                     for k in range(0,self.K):
                         prevW = w[sessInd[s-1],k,:,1] if s!=0 else None #  d x c matrix of previous session weights
@@ -667,6 +667,14 @@ class dynamic_GLMHMM():
                         for j in range(0, self.K):
                             p[sessInd[s]:sessInd[s+1],i,j] = (zeta[sessInd[s]:sessInd[s+1]-1,i,j].sum() + alpha * A[i,j])/(zeta[sessInd[s]:sessInd[s+1]-1,i,:].sum() + alpha) 
                 
+                elif model_type == 'dynamic-different-prior': # prior on P for consecutive sessions (Nature Comms Review)            
+                    for i in range(0, self.K):
+                        for j in range(0, self.K):
+                            if s == 0: # using previously CV global prior alpha=2
+                                p[sessInd[s]:sessInd[s+1],i,j] = (zeta[sessInd[s]:sessInd[s+1]-1,i,j].sum() + 2 * A[i,j])/(zeta[sessInd[s]:sessInd[s+1]-1,i,:].sum() + 2)
+                            else: # ignoring backward dependency
+                                p[sessInd[s]:sessInd[s+1],i,j] = (zeta[sessInd[s]:sessInd[s+1]-1,i,j].sum() + alpha * p[sessInd[s-1],i,j])/(zeta[sessInd[s]:sessInd[s+1]-1,i,:].sum() + alpha)
+
             if model_type == 'standard': # optimizing a single set of weights over all sessions
                 for k in range(0,self.K):
                     prevW = None #  d x c matrix of previous session weights

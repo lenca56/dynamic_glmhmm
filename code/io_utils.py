@@ -81,6 +81,9 @@ def get_mouse_design_new_batch(dfAll, subject, sessStop=None, signedStimulus=Tru
     function to process IBL data and form design matrix x and output vector y for a given subject 
 
     p_tanh = 5 used by Roy et al., 2021
+
+    !!! WARNING: choice & feedback type are already in format (-1,1)
+
     '''
     data = dfAll[dfAll['subject']==subject]   # Restrict data to the subject specified
 
@@ -95,7 +98,8 @@ def get_mouse_design_new_batch(dfAll, subject, sessStop=None, signedStimulus=Tru
     dataTemp.loc[dataTemp['contrastRight'].isna(), 'contrastRight'] = 0 
 
     # getting correct answer for each trial
-    correctSide = np.array(dataTemp['feedbackType'])
+    correctSide = (-np.array(dataTemp['feedbackType'])*np.array(dataTemp['choice']) + 1)/2
+    correctSide = correctSide.astype(int)
     responseTimes =  np.array(dataTemp['RT'])
     
     # tanh transformation
@@ -115,8 +119,8 @@ def get_mouse_design_new_batch(dfAll, subject, sessStop=None, signedStimulus=Tru
         x[:,0] = 1 # bias or offset is first column
         x[:,1] = cR - cL # 'stimulus contrast'
         x[:,1] = x[:,1] / np.std(x[:,1]) # z-scored   # note that mean should be around 0
-        x[1:,2] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's
-        x[1:,3] = 2 * np.array(dataTemp['feedbackType'])[0:-1].astype(int) - 1 # previous reward as in Zoe's
+        x[1:,2] = y[0:-1] # previous chioce as in Zoe's
+        x[1:,3] = dataTemp['feedbackType'][0:-1].astype(int) # previous reward as in Zoe's
     else:
         D = 5
         x = np.zeros((dataTemp.shape[0], D)) 
@@ -126,8 +130,8 @@ def get_mouse_design_new_batch(dfAll, subject, sessStop=None, signedStimulus=Tru
         x[:,1] = cR # contrast right transformed 
         x[:,2] = cL # contrast left transformed
         # not taking into account first and last of each session 
-        x[1:,3] = 2 * y[0:-1] - 1 # previous chioce as in Zoe's {-1,1}
-        x[1:,4] = 2 * np.array(dataTemp['feedbackType'])[0:-1].astype(int) - 1 # previous reward as in Zoe's {-1,1}
+        x[1:,3] = y[0:-1] # previous chioce as in Zoe's {-1,1}
+        x[1:,4] = dataTemp['feedbackType'][0:-1].astype(int) # previous reward as in Zoe's {-1,1}
         
     # session start indices
     sessInd = [0]
@@ -138,7 +142,14 @@ def get_mouse_design_new_batch(dfAll, subject, sessStop=None, signedStimulus=Tru
             dLength = len(dTemp.index.tolist())
             sessInd.append(sessInd[-1] + dLength)
     
-    return x, y, sessInd, correctSide, responseTimes
+    # switching output to [0,1]
+    y = -y # left and right choice meaning correspond to other values in this new dataset (left=correct 1, right=correct -1)
+    y = (y + 1) / 2 
+    y = y.astype(int)
+
+    pupilMean = np.array(dataTemp['pupil_mean1'])
+
+    return x, y, sessInd, correctSide, responseTimes, pupilMean
 
 def get_design_biased_blocks(dfAll, subject, sessInd, sessStop=None):
     ''' 
