@@ -12,7 +12,7 @@ import os
 from io_utils import *
 
 ibl_data_path = '../data_IBL'
-dfAll = pd.read_csv(ibl_data_path + '/Ibl_processed.csv')
+dfAll = pd.read_csv(ibl_data_path + '/IBL_processed_extra.csv')
 splitFolds = 5
 
 # list of all animals
@@ -53,7 +53,7 @@ signedStimulus = True
 
 # load data for particular animal
 pTanh = 5
-x, y, sessInd, correctSide = get_mouse_design(dfAll, subject=subject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) # with tanh transformation
+x, y, sessInd, correctSide, responseTimes = get_mouse_design(dfAll, subject=subject, sessStop=None, signedStimulus=signedStimulus, pTanh=pTanh) # with tanh transformation
 sess = len(sessInd) - 1
 
 # setting hyperparameters
