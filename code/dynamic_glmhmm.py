@@ -460,7 +460,7 @@ class dynamic_GLMHMM():
             # penalty term for size of weights for the standard model
             lf+= L2penaltyW * -1/2 * currentW[:].T @ currentW[:]
 
-        elif model_type in ['partial','dynamic']: # time-varying weights in dynamic GLM-HMM
+        elif model_type in ['partial','dynamic','dynamic-different-prior']: # time-varying weights in dynamic GLM-HMM
 
             if (sigma.sum() != 0): # sigma does not have any 0s
                 # inverse of covariance matrix
