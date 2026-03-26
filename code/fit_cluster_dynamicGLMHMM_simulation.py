@@ -35,7 +35,7 @@ for Nsess in sessions:
             z += 1
 
 # read from cluster array in order to get parallelizations
-idx = 0 #int(os.environ["SLURM_ARRAY_TASK_ID"])
+idx = int(os.environ["SLURM_ARRAY_TASK_ID"])
 Nsess = int(df.loc[idx,'Nsess'])
 Ntrial = int(df.loc[idx,'Ntrial'])
 Nsample = int(df.loc[idx, 'Nsample'])
@@ -75,7 +75,7 @@ bestSigma = sigmaList[bestSigmaInd-1]
 alphaList = [2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
 bestAlphaInd = 2  # Choosing best sigma index across animals
 bestAlpha = alphaList[bestAlphaInd]
-maxiter = 1 #250
+maxiter = 250
 
 rng = np.random.default_rng(42)
 
