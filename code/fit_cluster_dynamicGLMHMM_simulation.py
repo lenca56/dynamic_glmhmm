@@ -22,7 +22,7 @@ dfAll = pd.read_csv(ibl_data_path + '/IBL_processed_extra.csv')
 
 sessions = [25, 50]
 trials = [100,200,400,800]
-Nsamples = 20
+Nsamples = 50
 
 df = pd.DataFrame(columns=['init','K','signedStimulus', 'pTanh']) # in total z=0,399 inclusively
 z = 0
@@ -70,10 +70,10 @@ for s in range(50):
         standardP[s,j,:] = standardP[s,j,:] / standardP[s,j,:].sum()
 
 sigmaList = [10**x for x in list(np.arange(-3,1,0.5,dtype=float))] + [10**x for x in list(np.arange(1,4,1,dtype=float))]
-bestSigmaInd = 8 
+bestSigmaInd = 7 
 bestSigma = sigmaList[bestSigmaInd-1]
 alphaList = [2*(10**x) for x in list(np.arange(-1,6,0.5,dtype=float))]
-bestAlphaInd = 2  # Choosing best sigma index across animals
+bestAlphaInd = 3  # Choosing best sigma index across animals
 bestAlpha = alphaList[bestAlphaInd]
 maxiter = 250
 
@@ -93,5 +93,5 @@ truey, truez = dGLM_HMM.simulate_data_given_x(truex, trueW, trueP, truepi, sessI
 
 presentAll = np.ones((N))
 fitP, _, fitW, trainLl = dGLM_HMM.fit(truex, truey, presentAll, initP, truepi, initW, sigma=reshapeSigma(bestSigma, K, D), alpha=bestAlpha, A=standardP[0], sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=0, priorDirP = None, fit_init_states=False)
-np.savez(f'../simulations/dynamicGLMHMM_simulation_NatComms_sample={Nsample}_Nsess={Nsess}_Ntrial={Ntrial}', P=fitP, allW=fitW, y=truey, z=truez, x=truex, trueW=trueW, trueP=trueP)
+np.savez(f'../simulations/dynamicGLMHMM_simulation_NatComms_sample={Nsample}_Nsess={Nsess}_Ntrial={Ntrial}', P=fitP, W=fitW, y=truey, z=truez, x=truex, trueW=trueW, trueP=trueP)
 

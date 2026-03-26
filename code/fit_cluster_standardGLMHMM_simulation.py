@@ -52,7 +52,7 @@ D = x.shape[1]
 C = 2
 maxiter = 250
 
-model_type = 'standard' # fitting standard GLM-HMM
+model_type = 'dynamic' 
 
 dGLMHMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
 present = np.ones((N)).astype(int) # using all data
