@@ -22,7 +22,7 @@ dfAll = pd.read_csv(ibl_data_path + '/IBL_processed_extra.csv')
 
 sessions = [25, 50]
 trials = [100,200,400,800]
-Nsamples = 40
+Nsamples = 50
 
 df = pd.DataFrame(columns=['init','K','signedStimulus', 'pTanh']) # in total z=0,399 inclusively
 z = 0
