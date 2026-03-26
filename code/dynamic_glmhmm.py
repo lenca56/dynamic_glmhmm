@@ -152,6 +152,63 @@ class dynamic_GLMHMM():
         y = reshapeObs(y) # reshaping from n x c to n x 1
 
         return x, y, z
+    
+    def simulate_data_given_x(self, x, trueW, trueP, truepi, sessInd, seed=None):
+        '''
+        function that simulates x and y data from a set of true weights and true transition matrix
+
+        Parameters
+        ----------
+        trueW: N x K x D x C numpy array
+            true weight matrix. for C=2, trueW[:,:,:,1] = 0 
+        trueP: N x K x K numpy array
+            true probability transition matrices
+        truepi: K x 1 numpy vector
+            true probabilities for first latent of each session
+        sessInd: list of int
+            indices of each session start, together with last session end + 1
+        
+        Returns
+        -------
+        x: N x D numpy array
+            simulated design matrix containing two features: bias and stimulus
+        y: N x 1 numpy array
+            simulated observation vector (choices)
+        z: N x 1 numpy array
+            simulated hidden states vector (internal state)
+
+        '''
+        rng = np.random.default_rng(seed)
+
+        # check that weight and transition matrices are consistent with model hyperparameters
+        if (trueW.shape != (self.N, self.K, self.D, self.C)):
+            raise Exception(f'Weights need to have shape ({self.N}, {self.K}, {self.D}, {self.C})')
+        if (trueP.shape != (self.N, self.K, self.K)):
+            raise Exception(f'Transition matrix needs to have shape ({self.N}, {self.K}, {self.C})')
+
+        y = np.zeros((self.N, self.C)).astype(int)
+        z = np.zeros((self.N,),dtype=int)
+
+        if (self.K==1): # if there is only a single state (classic GLM)
+            z[:] = 0
+        else:
+            # generating latent variables z 
+            for t in range(0, self.N):
+                if (t in sessInd[:-1]): # beginning of session has a new draw for latent from distribution true pi
+                    z[t] = rng.choice(range(0, self.K), p=truepi)
+                else: # next draw comes from transition matrix probabilities
+                    z[t] = rng.choice(range(0, self.K), p=trueP[t,z[t-1],:])
+        
+        # observation probabilities
+        phi = self.observation_probability(x, trueW)
+
+        # generating choices y based on observation probability and generated latent z
+        for t in range(0, self.N):
+            y[t,int(rng.binomial(n=1, p=phi[t,z[t],1]))]=1 
+        
+        y = reshapeObs(y) # reshaping from n x c to n x 1
+
+        return y, z
 
     def forward_pass(self, y, present, P, pi, phi, startSessInd=[0]):
         '''
