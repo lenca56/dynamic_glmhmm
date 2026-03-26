@@ -92,6 +92,6 @@ initW, initP = reshape_parameters_session_to_trials(standardW[:Nsess+1], standar
 truey, truez = dGLM_HMM.simulate_data_given_x(truex, trueW, trueP, truepi, sessInd, seed=Nsample)
 
 presentAll = np.ones((N))
-fitP, _, fitW, trainLl = dGLM_HMM.fit(truex, truey, presentAll, initP, truepi, initW, sigma=reshapeSigma(bestSigma, K, D), alpha=bestAlpha, A=standardP[0], sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=0, priorDirP = None, fit_init_states=False)
+fitP, _, fitW, trainLl = dGLM_HMM.fit(truex, truey, presentAll, initP, truepi, initW, sigma=reshapeSigma(bestSigma, K, D), alpha=bestAlpha, A=standardP[0], sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=0, priorDirP = None, fit_init_states=True)
 np.savez(f'../simulations/dynamicGLMHMM_simulation_NatComms_sample={Nsample}_Nsess={Nsess}_Ntrial={Ntrial}', P=fitP, W=fitW, y=truey, z=truez, x=truex, trueW=trueW, trueP=trueP)
 
