@@ -36,9 +36,9 @@ for Nsess in sessions:
 
 # read from cluster array in order to get parallelizations
 idx = 0 #int(os.environ["SLURM_ARRAY_TASK_ID"])
-Nsess = df.loc[idx,'Nsess']
-Ntrial = df.loc[idx,'Ntrial']
-Nsample = df.loc[idx, 'Nsample'] 
+Nsess = int(df.loc[idx,'Nsess'])
+Ntrial = int(df.loc[idx,'Ntrial'])
+Nsample = int(df.loc[idx, 'Nsample'])
 
 K = 3
 D = 2
