@@ -171,6 +171,110 @@ def fit_eval_CV_partial_model(K, x, y, sessInd, presentTrain, presentTest, sigma
 
     return allP, allpi, allW, trainLl, testLlSessions, testLl, testAccuracy
 
+def fit_eval_CV_dynamic_model_reverse(K, x, y, sessInd, presentTrain, presentTest, alphaList=[0, 1, 10, 100, 1000, 10000], maxiter=200, dglmhmmW=None, dglmhmmP=None, partial_glmhmmpi=None, bestSigma=None, L2penaltyW=0, fit_init_states=False, model_type='dynamic'):
+    ''' 
+    fitting function for the "dynamic" models (time-varying weights and time-varying transition matrix), 
+    in decreasing order of hyperparameter alpha that governs transition matrix variability, where each models is initialized
+    with the best parameters obtained from the previously fit model with a slightly larger alpha
+
+    a very large alpha is equivalent to the parial GLM-HMM (static transition matrix)
+
+    each CV fold is fit individually
+
+    Parameters
+    ----------
+    K: int
+        number of latent states
+    x: N x D numpy array
+        full design matrix
+    y : N x 1 numpy vector 
+        full vector of observations with values 0,1,..,C-1
+    sessInd: list of int
+        indices of each session start, together with last session end + 1
+    presentTrain: numpy vector
+        list of indices in the train set for a single fold
+    presentTest: numpy vector
+        list of indices in the test set for a single fold
+    alphaList: list of positive numbers, starting with 0 (default = [0, 1, 10, 100, 1000, 10000])
+        list of different hyperparameters alpha governing the rate of change of transition matrix
+    maxiter: int 
+        maximum number of iterations before EM stopped (default=300)
+    partial_glmhmmW: Nsize x K x D x C numpy array 
+        given weights from partial glm-hmm fit (default=None)
+    globalP=None: K x K numpy array 
+        fitted static transition matrix from standard/partial glm-hmm fit (default=None)
+    bestSigma: float
+        value used for sigma, rate of change of weights across sessions, found by CV of "partial" model with above function
+    L2penaltyW: int
+        positive value determinig strength of L2 penalty on weights when fitting (default=0)
+    fit_init_states: Boolean (default=False)
+        whether to fit or not distribution of first latent in every session
+        if not, it's assumed uniform
+
+    Returns
+    ----------
+    allP: len(alphaList)+1 x N x K x K numpy array
+        allP[i] contains transition matrix across trials for i'th value of alpha in alphaList
+    allW: len(alphaList)+1 x N x K x D x C numpy array
+        allW[i] contains weight matrix across trials for i'th value of alpha in alphaList
+    trainLl: len(alphaList)+1 x maxiter numpy array
+        trainLl[i] contains total train set log-likelihood at every iteration for i'th value of alpha in alphaList
+    testLlSessions: len(alphaList)+1 x sess numpy array
+        testLlSessions[i] contains per-trial average test set log-likelihood for each session for i'th value of alpha in alphaList
+    testLl: len(alphaList)+1 numpy vector
+        testLl[i] contains per-trial average test set log-likelihood across sessions for i'th value of alpha in alphaList
+    testAccuracy: len(alphaList)+1 numpy vector
+        testAccuracy:[i] contains % correct predicted choies when hard assigning latent state and output for i'th value of alpha in alphaList
+
+    '''
+    N = x.shape[0]
+    D = x.shape[1]
+    C = 2 # only looking at binomial classes
+    sess = len(sessInd) - 1
+
+    trainLl = np.zeros((len(alphaList)+1, maxiter))
+    testLl = np.zeros((len(alphaList)+1))
+    testLlSessions = np.zeros((len(alphaList)+1, sess))
+    testAccuracy = np.zeros((len(alphaList)+1))
+    allP = np.zeros((len(alphaList)+1, N, K, K))
+    allpi = np.zeros((len(alphaList)+1, K))
+    allW = np.zeros((len(alphaList)+1, N,K,D,C)) 
+
+    dGLM_HMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
+
+    if (partial_glmhmmW is None or globalP is None): # fitting partial dynamic GLM-HMM, in which only weights are varying
+        raise Exception("partial_glmhmmW AND globalP need to be given from partial dyanmic GLM-HMM parameter fitting of best sigma")
+    if (bestSigma is None): # fitting dGLM-HMM1 where only weights are varying
+        raise Exception("bestSigma need to be given from partial dyanmic GLM-HMM parameter fitting of best sigma")
+    
+    # model equivalent to alpha -> infinity
+    allP[0] = dglmhmmP
+    allW[0] = dglmhmmW
+
+    if fit_init_states == False:
+        allpi[len(alphaList)] = np.ones((K))/K 
+    else:
+        allpi[len(alphaList)] = partial_glmhmmpi
+    
+    # evaluate dGLMHMM1 fit
+    testLlSessions[len(alphaList)], testLl[len(alphaList)], testAccuracy[len(alphaList)] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[len(alphaList)], allpi[len(alphaList)], allW[len(alphaList)])
+    
+    for indAlpha in range(len(alphaList)): 
+
+        # initializing from previous fit which means higher alpha
+        initP = allP[indAlpha-1] 
+        initpi = allpi[indAlpha-1] 
+        initW = allW[indAlpha-1] 
+            
+        # fitting dGLM-HMM
+        allP[indAlpha], allpi[indAlpha], allW[indAlpha], trainLl[indAlpha] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(bestSigma, K, D), alpha=alphaList[indAlpha], A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type=model_type,  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
+   
+        # evaluate 
+        testLlSessions[indAlpha], testLl[indAlpha], testAccuracy[indAlpha] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[indAlpha], allpi[indAlpha], allW[indAlpha])
+
+    return allP, allpi, allW, trainLl, testLlSessions, testLl, testAccuracy
+
+
 def fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain, presentTest, alphaList=[0, 1, 10, 100, 1000, 10000], maxiter=200, partial_glmhmmW=None, globalP=None, partial_glmhmmpi=None, bestSigma=None, L2penaltyW=0, fit_init_states=False, model_type='dynamic'):
     ''' 
     fitting function for the "dynamic" models (time-varying weights and time-varying transition matrix), 
