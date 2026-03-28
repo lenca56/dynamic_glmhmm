@@ -85,4 +85,4 @@ P, pi, W, trainLl = dGLM_HMM.fit(x, y, presentTrain[fold], P_dynamic_best, truep
 testLlSessions, testLl, testAccuracy = dGLM_HMM.evaluate(x, y, sessInd, presentTest[fold], P, pi, W)
 
 # saving parameters (per-session to optimize memory)
-np.savez(f'../data_IBL/{subject}/{subject}_dynamicGLMHMM_different-prior-P_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', allP=P[:,sessInd[:-1]], allW=W[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
+np.savez(f'../data_IBL/{subject}/{subject}_dynamicGLMHMM_different-prior-P_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', P=P[sessInd[:-1]], W=W[sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
