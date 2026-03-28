@@ -72,13 +72,13 @@ bestSigma = sigmaList[bestSigmaInd-1]
 
 dataInit = data = np.load(f'../data_IBL/{subject}/{subject}_partialGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}.npz')
 globalP = dataInit['allP'][bestSigmaInd,0]
-partial_glmhmmW, _ = reshape_parameters_session_to_trials(dataInit['allW'][bestSigmaInd], dataInit['allP'][bestSigmaInd], sessInd)
 
 data_dynamic = np.load(f'../data_IBL/{subject}/{subject}_dynamicGLMHMM_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}.npz')
-P_dynamic_best = data_dynamic['allP']
-W_dynamic_best = data_dynamic['allW']
 bestAlphaInd = 2
 truepi = np.ones((K))/K
+
+W_dynamic_best, P_dynamic_best = reshape_parameters_session_to_trials(data_dynamic['allW'][bestAlphaInd], data_dynamic['allP'][bestAlphaInd], sessInd)
+
 
 dGLM_HMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
 P, pi, W, trainLl = dGLM_HMM.fit(x, y, presentTrain, P_dynamic_best[bestAlphaInd], truepi, W_dynamic_best[bestAlphaInd], sigma=reshapeSigma(bestSigma, K, D), alpha=0, A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
