@@ -80,12 +80,9 @@ truepi = np.ones((K))/K
 W_dynamic_best, P_dynamic_best = reshape_parameters_session_to_trials(data_dynamic['allW'][bestAlphaInd], data_dynamic['allP'][bestAlphaInd], sessInd)
 
 dGLM_HMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
-P, pi, W, trainLl = dGLM_HMM.fit(x, y, presentTrain, P_dynamic_best, truepi, W_dynamic_best, sigma=reshapeSigma(bestSigma, K, D), alpha=0, A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
+P, pi, W, trainLl = dGLM_HMM.fit(x, y, presentTrain[fold], P_dynamic_best, truepi, W_dynamic_best, sigma=reshapeSigma(bestSigma, K, D), alpha=0, A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
 # evaluate 
-testLlSessions, testLl, testAccuracy = dGLM_HMM.evaluate(x, y, sessInd, presentTest, P, pi, W)
+testLlSessions, testLl, testAccuracy = dGLM_HMM.evaluate(x, y, sessInd, presentTest[fold], P, pi, W)
 
-# # fitting
-# allP, _, allW, trainLl, testLlSessions, testLl, testAccuracy = fit_eval_CV_dynamic_model(K, x, y, sessInd, presentTrain[fold], presentTest[fold], alphaList=alphaList, maxiter=maxiter, partial_glmhmmW=partial_glmhmmW, globalP=globalP, partial_glmhmmpi=None, bestSigma=bestSigma, L2penaltyW=L2penaltyW, fit_init_states=fit_init_states, model_type='dynamic-different-prior')
-   
 # saving parameters (per-session to optimize memory)
 np.savez(f'../data_IBL/{subject}/{subject}_dynamicGLMHMM_different-prior-P_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', allP=P[:,sessInd[:-1]], allW=W[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
