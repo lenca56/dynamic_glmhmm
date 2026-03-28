@@ -242,13 +242,9 @@ def fit_eval_CV_dynamic_model_reverse(K, x, y, sessInd, presentTrain, presentTes
 
     dGLM_HMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
 
-    if (partial_glmhmmW is None or globalP is None): # fitting partial dynamic GLM-HMM, in which only weights are varying
-        raise Exception("partial_glmhmmW AND globalP need to be given from partial dyanmic GLM-HMM parameter fitting of best sigma")
-    if (bestSigma is None): # fitting dGLM-HMM1 where only weights are varying
-        raise Exception("bestSigma need to be given from partial dyanmic GLM-HMM parameter fitting of best sigma")
-    
     # model equivalent to alpha -> infinity
     allP[0] = dglmhmmP
+    globalP = np.mean(dglmhmmP, axis=0)
     allW[0] = dglmhmmW
 
     if fit_init_states == False:
