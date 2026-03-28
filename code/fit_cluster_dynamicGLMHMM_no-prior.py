@@ -79,9 +79,8 @@ truepi = np.ones((K))/K
 
 W_dynamic_best, P_dynamic_best = reshape_parameters_session_to_trials(data_dynamic['allW'][bestAlphaInd], data_dynamic['allP'][bestAlphaInd], sessInd)
 
-
 dGLM_HMM = dynamic_glmhmm.dynamic_GLMHMM(N,K,D,C)
-P, pi, W, trainLl = dGLM_HMM.fit(x, y, presentTrain, P_dynamic_best[bestAlphaInd], truepi, W_dynamic_best[bestAlphaInd], sigma=reshapeSigma(bestSigma, K, D), alpha=0, A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
+P, pi, W, trainLl = dGLM_HMM.fit(x, y, presentTrain, P_dynamic_best, truepi, W_dynamic_best, sigma=reshapeSigma(bestSigma, K, D), alpha=0, A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type='dynamic',  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
 # evaluate 
 testLlSessions, testLl, testAccuracy = dGLM_HMM.evaluate(x, y, sessInd, presentTest, P, pi, W)
 
