@@ -60,7 +60,7 @@ N = x.shape[0]
 D = x.shape[1]
 C = 2
 presentTrain, presentTest = split_data(N, sessInd, folds=splitFolds, blocks=10, random_state=1)
-alphaList = [0]+[2*(10**x) for x in list(np.arange(-1,6,1,dtype=float))]
+alphaList = [2*(10**x) for x in list(np.arange(-1,6,1,dtype=float))]
 L2penaltyW = 0
 maxiter = 2 #200
 fit_init_states = False
