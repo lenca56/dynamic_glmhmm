@@ -77,7 +77,7 @@ truepi = np.ones((K))/K
 W_dynamic_best, P_dynamic_best = reshape_parameters_session_to_trials(data_dynamic['allW'][bestAlphaInd], data_dynamic['allP'][bestAlphaInd], sessInd)
 
 # fitting
-allP, _, allW, trainLl, testLlSessions, testLl, testAccuracy = fit_eval_CV_dynamic_model_reverse(K, x, y, sessInd, presentTrain[fold], presentTest[fold], alphaList=alphaList, maxiter=maxiter, dglmhmmW=W_dynamic_best, dglmhmmP=P_dynamic_best, partial_glmhmmpi=None, bestSigma=bestSigma, L2penaltyW=L2penaltyW, fit_init_states=fit_init_states, model_type='dynamic-different-prior')
+allP, _, allW, trainLl, testLlSessions, testLl, testAccuracy = fit_eval_CV_dynamic_model_reverse(K, x, y, sessInd, presentTrain[fold], presentTest[fold], alphaList=alphaList, maxiter=maxiter, dglmhmmW=W_dynamic_best, dglmhmmP=P_dynamic_best, partial_glmhmmpi=truepi, bestSigma=bestSigma, L2penaltyW=L2penaltyW, fit_init_states=fit_init_states, model_type='dynamic-different-prior')
    
 # saving parameters (per-session to optimize memory)
 np.savez(f'../data_IBL/{subject}/{subject}_dynamicGLMHMM_different-prior-P_CV_{K}-state_fold={fold}_pTanh={pTanh}_L2penaltyW={L2penaltyW}_signedStimulus={signedStimulus}', allP=allP[:,sessInd[:-1]], allW=allW[:,sessInd[:-1]], trainLl=trainLl, testLl=testLl, testLlSessions=testLlSessions, testAccuracy=testAccuracy)
