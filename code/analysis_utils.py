@@ -248,14 +248,14 @@ def fit_eval_CV_dynamic_model_reverse(K, x, y, sessInd, presentTrain, presentTes
     allW[0] = dglmhmmW
 
     if fit_init_states == False:
-        allpi[len(alphaList)] = np.ones((K))/K 
+        allpi[0] = np.ones((K))/K 
     else:
-        allpi[len(alphaList)] = partial_glmhmmpi
+        allpi[0] = partial_glmhmmpi
     
     # evaluate dGLMHMM1 fit
-    testLlSessions[len(alphaList)], testLl[len(alphaList)], testAccuracy[len(alphaList)] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[len(alphaList)], allpi[len(alphaList)], allW[len(alphaList)])
+    testLlSessions[0], testLl[0], testAccuracy[0] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[0], allpi[0], allW[0])
     
-    for indAlpha in range(len(alphaList)): 
+    for indAlpha in range(1, len(alphaList)+1): 
 
         # initializing from previous fit which means higher alpha
         initP = allP[indAlpha-1] 
