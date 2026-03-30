@@ -31,7 +31,7 @@ def get_mouse_design(dfAll, subject, sessStop=None, signedStimulus=True, pTanh=N
     dataTemp = pd.DataFrame(data.loc[data['date'].isin(list(dateToKeep))])
 
     # getting correct answer for each trial
-    correctSide = np.array(dataTemp['correctSide'])
+    correctSide = np.array(dataTemp['correctSide']).astype(int)
     responseTimes =  np.array(dataTemp['RT'])
     
     # tanh transformation

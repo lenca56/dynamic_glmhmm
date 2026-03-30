@@ -263,7 +263,7 @@ def fit_eval_CV_dynamic_model_reverse(K, x, y, sessInd, presentTrain, presentTes
         initW = allW[indAlpha-1] 
             
         # fitting dGLM-HMM
-        allP[indAlpha], allpi[indAlpha], allW[indAlpha], trainLl[indAlpha] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(bestSigma, K, D), alpha=alphaList[indAlpha], A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type=model_type,  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
+        allP[indAlpha], allpi[indAlpha], allW[indAlpha], trainLl[indAlpha] = dGLM_HMM.fit(x, y, presentTrain, initP, initpi, initW, sigma=reshapeSigma(bestSigma, K, D), alpha=alphaList[indAlpha-1], A=globalP, sessInd=sessInd, maxIter=maxiter, tol=1e-3, model_type=model_type,  L2penaltyW=L2penaltyW, priorDirP = None, fit_init_states=fit_init_states)
    
         # evaluate 
         testLlSessions[indAlpha], testLl[indAlpha], testAccuracy[indAlpha] = dGLM_HMM.evaluate(x, y, sessInd, presentTest, allP[indAlpha], allpi[indAlpha], allW[indAlpha])
